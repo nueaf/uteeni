@@ -1,0 +1,19 @@
+class #DBNAME# {
+    static $conns = array();
+    static $connected_host = null; 
+    static $type = "#type#";
+    static $host = "#host#";
+    static $user = "#user#";
+    static $pass = "#pass#";
+    static $db   = "#db#";
+    static $port = #port#;
+	static $driver_options = #driver_options#;
+
+    public static function connect() {
+        $host = self::$host;
+        if(!array_key_exists(self::$host, self::$conns)) {
+            self::$conns[self::$host] = new PDO(#dsn#, self::$user, self::$pass, self::$driver_options);
+        }
+        return self::$conns[self::$host];
+    }
+}
