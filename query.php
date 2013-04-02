@@ -250,6 +250,7 @@ class ActiveRecordQuery {
 	protected $calculatedColumns = Array();
     protected $joins = Array();
     protected $filters = Array();
+	protected $fullJoin = false;
 
     /**
      * Constructor for the query object.
@@ -591,6 +592,15 @@ class ActiveRecordQuery {
 
         return $newAlias;
     }
+
+	/**
+	 * Will make the query eager load all joins and not just has_ones. Beware as this can potentially give you ALOT of data
+	 *
+	 * send false to turn Off again
+	 */
+	public function fullJoin($fullJoin = true){
+		$this->fullJoin = $fullJoin;
+	}
 
     /**
      * Set the sorting for the query.
@@ -950,9 +960,13 @@ class ActiveRecordQuery {
 
     protected function executeNormal($dontHydrate) {
         $order = $this->translateSorts();
-        $aliasColumns = $this->getAliasColumns($this->mainAlias, "has_one");
+		if($this->fullJoin){
+			$aliasColumns = $this->getAliasColumns($this->mainAlias);
+		}else{
+			$aliasColumns = $this->getAliasColumns($this->mainAlias, "has_one");
+		}
         $select = $this->buildNormalSelect($aliasColumns);
-
+		
         $foundEntities = Array();
         foreach ($aliasColumns as $alias => $columns) {
             $foundEntities[$this->getAlias($alias)] = Array();
@@ -1025,21 +1039,40 @@ class ActiveRecordQuery {
             $aliases = Array();
             //Get inner joins first (better chance for them holding data ;)
             foreach ($infos as $info) {
-                if ($info["assoc_type"]=="has_one" && $info["type"]==self::JOIN_INNER) {
-                    $aliases[$association] = $info["remoteAlias"];
+                if ( ( $this->fullJoin || $info["assoc_type"]=="has_one" ) && $info["type"]==self::JOIN_INNER) {
+					if($info["assoc_type"]=="has_one"){
+						$aliases[$association] = $info["remoteAlias"];
+					}  else {
+						$aliases[$association][] = $info["remoteAlias"];
+					}
                 }
             }
             foreach ($infos as $info) {
-                if ($info["assoc_type"]=="has_one" && $info["type"]==self::JOIN_LEFT) {
-                    $aliases[$association] = $info["remoteAlias"];
+                if ( ( $this->fullJoin || $info["assoc_type"]=="has_one" ) && $info["type"]==self::JOIN_LEFT) {
+                    if($info["assoc_type"]=="has_one"){
+						$aliases[$association] = $info["remoteAlias"];
+					}  else {
+						$aliases[$association][] = $info["remoteAlias"];
+					}
                 }
             }
 
             foreach ($aliases as $association=>$referred_alias) {
-                $aliasElements[$alias]->$association = $aliasElements[$referred_alias];
-                $this->addJoinData($referred_alias, $aliasElements);
-            }
-        }
+				if(is_array($referred_alias)){
+					foreach($referred_alias as $ref_alias){
+						if(isset($aliasElements[$ref_alias])){
+							$aliasElements[$alias]->{$association}[] = $aliasElements[$ref_alias];
+							$this->addJoinData($ref_alias, $aliasElements);
+						}else{
+							$aliasElements[$alias]->{$association} = array();
+						}
+					}
+				}else{
+					$aliasElements[$alias]->$association = $aliasElements[$referred_alias];
+					$this->addJoinData($referred_alias, $aliasElements);
+				}
+			}
+		}
 
         return true;
     }
@@ -1075,7 +1108,7 @@ class ActiveRecordQuery {
 
         $db = Database::connect($this->obj->getDatabaseName());
         $sql = SQLSyntaxor::getSelectSQL($options, $db->getAttribute(PDO::ATTR_DRIVER_NAME));
-
+		
         return $sql;
     }
 
