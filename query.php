@@ -387,7 +387,9 @@ class ActiveRecordQuery {
 			"LT"			=> "<", 
 			"GT"			=> ">", 
 			"DIFF1"			=> "<>",
-			"DIFF2"			=> "!="
+			"DIFF2"			=> "!=",
+			"FUNC_INET_NTOA"=> "INET_NTOA",
+			"FUNC_INET_ATON"=> "INET_ATON",
 		);
 
 		$expression_map = Array(
@@ -399,7 +401,7 @@ class ActiveRecordQuery {
 			"CALCULATION"     => Array("COLUMN,MATH,EXPRESSION"),
 			"MATH"            => Array("ADDITION","SUBTRACTION","MULTIPLICATION","DIVISION"),
 			//"AGGR_FUNC"		  => Array("FUNC_SUM", "FUNC_COUNT"), //FIXME support for group by statements
-			"FUNC"			  => Array("FUNC_CONCAT", "FUNC_IF"),
+			"FUNC"			  => Array("FUNC_CONCAT", "FUNC_IF", "FUNC_INET_NTOA", "FUNC_INET_ATON"),
 			"STRING"		  => Array("STR_START,CHAR,STR_END"),
 			"COMP_OPERATOR"	  => Array("EQUAL", "LT", "GT", "DIFF1", "DIFF2")
 		);
