@@ -98,6 +98,9 @@ class ActiveRecord {
 			$instance = new $table();
 			$database = $instance->database."Database";
 		}
+		if(!ActiveRecordDatabase::$dbconfig){
+			ActiveRecordDatabase::load($database);
+		}
         $func = create_function('$c', 'return strtoupper($c[1]);');
         return ActiveRecordDatabase::$dbconfig[$database]['prefix'] . preg_replace_callback('/_([a-z])/', $func, $table) . ActiveRecordDatabase::$dbconfig[$database]['suffix'];
     }
