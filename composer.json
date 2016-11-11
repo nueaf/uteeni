@@ -1,0 +1,12 @@
+{
+    "name": "nueaf/uteeni",
+    "description": "Uteeni ActiveRecord",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Michael Als",
+            "email": "nueaf@nueaf.dk"
+        }
+    ],
+    "require": {}
+}
