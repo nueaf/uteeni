@@ -8,5 +8,10 @@
             "email": "nueaf@nueaf.dk"
         }
     ],
-    "require": {}
+    "require": {},
+    "autoload": {
+        "files" : [
+            "class_loader.php"
+        ]
+    }
 }
