@@ -1,5 +1,5 @@
 <?php
-
+namespace Nueaf\Uteeni;
 class Criterion {
 	
 	public $model;

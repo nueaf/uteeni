@@ -1,55 +1,35 @@
 <?php
-/*
- * 	Base class for uteeni active record
- * 	Developed by Kristian Nissen and Michael Als @ eteneo ApS
- */
-require_once dirname(__FILE__) . '/memchached.php';
-require_once dirname(__FILE__) . '/sql_syntaxor.php';
-require_once dirname(__FILE__) . '/criterion.php';
-require_once dirname(__FILE__) . '/criteria.php';
-@include_once dirname(__FILE__) . '/query.php'; //This may not be able for older versions of AR
 
-/**
- * Exception class used in cases where use of an unknown property is attempted.
- */
-class ActiveRecordPropertyException extends Exception {
+namespace Nueaf\Uteeni;
 
-}
-
-/**
- * Exception class used in cases where an unknown method call is attempted.
- */
-class ActiveRecordMethodException extends BadMethodCallException {
-
-}
-/**
- * Exception class used in cases where a validation fails.
- */
-class ActiveRecordValidationException extends Exception {
-
-}
+use Nueaf\Uteeni\Exceptions\ActiveRecordMethodException;
+use Nueaf\Uteeni\Exceptions\ActiveRecordPropertyException;
+use Nueaf\Uteeni\Exceptions\ActiveRecordValidationException;
 
 /**
  * The active record base class.
  *
- * All classes describing tables and tablerows should inherit from this or
+ * All classes describing tables and table rows should inherit from this or
  * subclasses of this.
+ *
+ *    Developed by Kristian Nissen and Michael Als @ Eteneo ApS
  */
-class ActiveRecord {
+class ActiveRecord
+{
 
-	protected $table_name;
+    protected $table_name;
     protected $database;
     protected $properties;
     public $unmodified_properties;
     public $raw;
     protected $meta;
-    protected $associations = Array();
-    protected $foreign_keys = Array();
+    protected $associations = array();
+    protected $foreign_keys = array();
     static public $db;
     protected $affected_rows = null;
     private $cache_prepend = 'ar';
-	protected $specific_model_hooks = array();
-	protected static $generic_hooks = array();
+    protected $specific_model_hooks = array();
+    protected static $generic_hooks = array();
 
     /**
      * Constructor for the active record object.
@@ -65,10 +45,11 @@ class ActiveRecord {
      * @param boolean $ignoreFailure Will make the constructor catch exceptions and carry on its work as if nothing happened.
      * @throws ActiveRecordPropertyException if an unknown property is provided and ignoreFailure is false.
      */
-    function __construct($values = array(), $ignoreFailure=false) {
+    function __construct($values = array(), $ignoreFailure = false)
+    {
         //Make sure we have an array
         if (!is_array($values)) {
-            $values = (array) $values;
+            $values = (array)$values;
         }
 
         //Set all the received data
@@ -92,17 +73,20 @@ class ActiveRecord {
      * @param string $table
      * @return string The expected class name
      */
-    public static function getClassnameFromTablename($table, $database = null) {
+    public static function getClassnameFromTablename($table, $database = null)
+    {
         $table = ucfirst(strtolower($table));
-		if(!$database){
-			$instance = new $table();
-			$database = $instance->database."Database";
-		}
-		if(!ActiveRecordDatabase::$dbconfig){
-			ActiveRecordDatabase::load($database);
-		}
-        $func = create_function('$c', 'return strtoupper($c[1]);');
-        return ActiveRecordDatabase::$dbconfig[$database]['prefix'] . preg_replace_callback('/_([a-z])/', $func, $table) . ActiveRecordDatabase::$dbconfig[$database]['suffix'];
+        if (!$database) {
+            $instance = new $table();
+            $database = $instance->database . "Database";
+        }
+        if (!ActiveRecordDatabase::$dbConfig) {
+            ActiveRecordDatabase::load($database);
+        }
+        $dbConfig = ActiveRecordDatabase::getConfig();
+        $dbConfig = $dbConfig[$database];
+        $func = fn(string $c) => strtoupper($c[1]);
+        return $dbConfig['prefix'] . preg_replace_callback('/_([a-z])/', $func, $table) . $dbConfig['suffix'];
     }
 
     /**
@@ -116,7 +100,8 @@ class ActiveRecord {
      *
      * @return string
      */
-    function __toString() {
+    function __toString()
+    {
         $class = get_class($this);
         $print_r = print_r($this->getValues(), true);
         return $class . substr($print_r, 5);
@@ -134,12 +119,13 @@ class ActiveRecord {
      * a timetamp. Likewise the __set_date method may be used to simply override
      * the normal way of setting the date property.
      *
-     * @todo: Figure out if setting an association should change the underlying relation properties.
-     *
      * @param string $name The name of the property to set
      * @param string $value The value of the field to be set
+     * @todo: Figure out if setting an association should change the underlying relation properties.
+     *
      */
-    function __set($name, $value) {
+    function __set($name, $value)
+    {
         if (method_exists($this, $method = "__set_$name")) {
             $this->$method($value);
         } elseif (array_key_exists($name, $this->properties)) {
@@ -167,7 +153,8 @@ class ActiveRecord {
      *
      * @param string $name The name of the property to retreive
      */
-    function __get($name) {
+    function __get($name)
+    {
         if (method_exists($this, $method = "__get_$name")) {
             return $this->$method();
         } elseif (array_key_exists($name, $this->properties)) {
@@ -212,7 +199,8 @@ class ActiveRecord {
      * @param array $args The arguments passed to the function
      * @return mixed
      */
-    function __call($function, $args) {
+    function __call($function, $args)
+    {
         $matches = array();
         if (stripos($function, 'find_by_') !== false) {
             $method_name = substr($function, 8);
@@ -223,8 +211,8 @@ class ActiveRecord {
         } elseif (preg_match("/list_(.*?)_by_(.*)/", $function, $matches)) {
             $options = array_key_exists(1, $args) ? $args[1] : null;
             return $this->list_by_property($matches[1], $matches[2], $args[0], $options);
-		} else if ($this->hasAssociation($function)) {
-            return $this->fetch_assoc($function, count($args)?$args[0]:array());
+        } else if ($this->hasAssociation($function)) {
+            return $this->fetch_assoc($function, count($args) ? $args[0] : array());
         } else if (preg_match("/get_(.*?)_(.*)/", $function, $matches) && array_key_exists($matches[2], $this->meta)) {
             $where = array_key_exists(0, $args) ? $args[0] : null;
             return $this->getAggregateValue($matches[1], $matches[2], $where);
@@ -235,16 +223,18 @@ class ActiveRecord {
         }
     }
 
-	function __isset($name) {
-		return isset($this->properties[$name]);
-	}
+    function __isset($name)
+    {
+        return isset($this->properties[$name]);
+    }
 
     /**
      * Method for retreiving the table name.
      *
      * @return string The name of the table.
      */
-    public function getTableName() {
+    public function getTableName()
+    {
         return $this->table_name;
     }
 
@@ -253,7 +243,8 @@ class ActiveRecord {
      *
      * @return string The name of the database connection
      */
-    public function getDatabaseName() {
+    public function getDatabaseName()
+    {
         return $this->database;
     }
 
@@ -262,7 +253,8 @@ class ActiveRecord {
      *
      * @return PDO
      */
-    public function getDatabaseConnection() {
+    public function getDatabaseConnection()
+    {
         return Database::connect($this->getDatabaseName());
     }
 
@@ -272,7 +264,8 @@ class ActiveRecord {
      * @param string $name The name of the column
      * @return bool True if the column exists.
      */
-    public function hasColumn($name) {
+    public function hasColumn($name)
+    {
         return array_key_exists($name, $this->meta);
     }
 
@@ -281,7 +274,8 @@ class ActiveRecord {
      *
      * @return array Array of column=>info entries simmilar to the meta property on this class.
      */
-    function getProperties() {
+    function getProperties()
+    {
         return $this->meta;
     }
 
@@ -299,9 +293,10 @@ class ActiveRecord {
      * @param boolean $noAssociations If true only column values will be returned.
      * @return Array Array of properties.
      */
-    function getValues($noAssociations = false) {
+    function getValues($noAssociations = false)
+    {
         if ($noAssociations) {
-            $result = Array();
+            $result = array();
             foreach (array_keys($this->meta) as $name) {
                 $result[$name] = $this->$name;
             }
@@ -325,13 +320,14 @@ class ActiveRecord {
      * @param array $assoc See the description above.
      * @return Array Array of field=>values
      */
-    function getValuesAssoc(array $assoc=Array()) {
+    function getValuesAssoc(array $assoc = array())
+    {
         $result = $this->getValues(true);
 
         foreach ($assoc as $association => $subassoc) {
             $data = $this->$association;
             if (is_array($data)) {
-                $result[$association] = Array();
+                $result[$association] = array();
                 foreach ($data as $item) {
                     $result[$association][] = $item->getValuesAssoc($subassoc);
                 }
@@ -355,12 +351,13 @@ class ActiveRecord {
      *
      * @return string The name of the primary key.
      */
-    public function find_primary() {
+    public function find_primary()
+    {
         $constname = "ACTIVERECORD_STRICT_FIND_ONE";
         $strict = defined($constname) && constant($constname);
 
         $primaries = $this->find_primaries();
-        if ($strict && count($primaries)>1) {
+        if ($strict && count($primaries) > 1) {
             throw new Exception("Multiple primary keys found for table: {$this->tablename}");
         }
 
@@ -380,7 +377,8 @@ class ActiveRecord {
      *
      * @return array Of primary key column names.
      */
-    public function find_primaries() {
+    public function find_primaries()
+    {
         $primaries = array();
         foreach ($this->meta as $key => $value) {
             if ($value["primary"] === true)
@@ -403,7 +401,8 @@ class ActiveRecord {
      *
      * @return Array Array of columns of the type timestamp
      */
-    protected function find_timestamps() {
+    protected function find_timestamps()
+    {
         $timestamps = array();
         foreach ($this->meta as $key => $value) {
             if (isset($value["timestamp_update"]) && $value["timestamp_update"] === true)
@@ -420,7 +419,8 @@ class ActiveRecord {
      * @param string $name The name of the association.
      * @return boolean True if the association exists.
      */
-    public function hasAssociation($name) {
+    public function hasAssociation($name)
+    {
         if (property_exists($this, "foreign_keys") && isset($this->foreign_keys)) {
             $this->associations = array_merge($this->associations, $this->foreign_keys);
             unset($this->foreign_keys);
@@ -429,7 +429,8 @@ class ActiveRecord {
         return array_key_exists($name, $this->associations);
     }
 
-    public function getAssociations() {
+    public function getAssociations()
+    {
         if (property_exists($this, "foreign_keys") && isset($this->foreign_keys)) {
             $foreigns = array_keys($this->foreign_keys);
             $this->hasAssociation($foreigns[0]);
@@ -477,12 +478,13 @@ class ActiveRecord {
      * @return array The association information or null if no such association
      * exists.
      */
-    public function getAssociationInfo($name) {
+    public function getAssociationInfo($name)
+    {
         if (!$this->hasAssociation($name)) {
             return null;
         }
 
-        $assoc = & $this->associations[$name];
+        $assoc = &$this->associations[$name];
 
         if (!array_key_exists("real_class", $assoc)) {
             if (class_exists($assoc["class"]) && is_subclass_of($assoc["class"], "ActiveRecord")) {
@@ -502,46 +504,48 @@ class ActiveRecord {
      * @param array $ignore_relations
      * @return boolean True if there are association data related to the row
      */
-    public function hasAssociationData($ignore_relations = Array()) {
-		$this->getAssociations();
-    	if ( !$this->associations ) return FALSE;
-		foreach ( array_keys($this->associations) AS $class ) {
-			if ( in_array($class, $ignore_relations) ) continue; // ed. typically a created_by relation wants to be ignored
-			if ( $this->fetch_assoc($class) ) {
-				return TRUE;
-			}
-		}
-		return FALSE;
+    public function hasAssociationData($ignore_relations = array())
+    {
+        $this->getAssociations();
+        if (!$this->associations) return FALSE;
+        foreach (array_keys($this->associations) as $class) {
+            if (in_array($class, $ignore_relations)) continue; // ed. typically a created_by relation wants to be ignored
+            if ($this->fetch_assoc($class)) {
+                return TRUE;
+            }
+        }
+        return FALSE;
     }
 
-	/**
-	 * Finds and returns the name of the association which points backwars
-	 * compared to the association named by the $assoc param.
-	 *
-	 * If not reverse is found null is returned.
-	 *
-	 * @param $assoc The association to find the reverse for
-	 * @return Array("class"=>$cls, "assoc"=>$assoc) The class holding the association and the name of the association.
-	 */
-	public function reversedJoin($assoc) {
-		$assocInfo = $this->getAssociationInfo($assoc);
-		$cls = $assocInfo["real_class"];
-		$obj = new $cls;
-		$assocs = $obj->getAssociations();
-		foreach ($assocs as $assoc) {
-			$reverseAssocInfo = $obj->getAssociationInfo($assoc);
-			if (is_a($this, $reverseAssocInfo["real_class"])) {
-				if ($reverseAssocInfo["local_property"]==$assocInfo["class_property"]) {
-					if ($reverseAssocInfo["class_property"]==$assocInfo["local_property"]) {
-						if (($assocInfo["ass_type"]!="has_and_belongs_to_many" && $reverseAssocInfo["ass_type"]!="has_and_belongs_to_many") || $reverseAssocInfo["join_table"]==$assocInfo["join_table"]) {
-							return Array("class"=>$cls,"assoc"=>$assoc);
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
+    /**
+     * Finds and returns the name of the association which points backwars
+     * compared to the association named by the $assoc param.
+     *
+     * If not reverse is found null is returned.
+     *
+     * @param $assoc The association to find the reverse for
+     * @return Array("class"=>$cls, "assoc"=>$assoc) The class holding the association and the name of the association.
+     */
+    public function reversedJoin($assoc)
+    {
+        $assocInfo = $this->getAssociationInfo($assoc);
+        $cls = $assocInfo["real_class"];
+        $obj = new $cls;
+        $assocs = $obj->getAssociations();
+        foreach ($assocs as $assoc) {
+            $reverseAssocInfo = $obj->getAssociationInfo($assoc);
+            if (is_a($this, $reverseAssocInfo["real_class"])) {
+                if ($reverseAssocInfo["local_property"] == $assocInfo["class_property"]) {
+                    if ($reverseAssocInfo["class_property"] == $assocInfo["local_property"]) {
+                        if (($assocInfo["ass_type"] != "has_and_belongs_to_many" && $reverseAssocInfo["ass_type"] != "has_and_belongs_to_many") || $reverseAssocInfo["join_table"] == $assocInfo["join_table"]) {
+                            return array("class" => $cls, "assoc" => $assoc);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
 
     /**
      * Escapes and by other means prepares a value for use in a SQL query.
@@ -558,7 +562,8 @@ class ActiveRecord {
      * @param mixed $value
      * @return string the value in a stringform, useable by mysql
      */
-    function prepare_property($name, $value = null) {
+    function prepare_property($name, $value = null)
+    {
         //If value is null, use the value of this instance's field.
         if (is_null($value)) {
             $value = $this->properties[$name];
@@ -578,14 +583,14 @@ class ActiveRecord {
             }
         }
 
-		//Handle the value dependent on type.
+        //Handle the value dependent on type.
         switch ($this->meta[$name]['type']) {
             case 'datetime':
             case 'time':
             case 'timestamp':
             case 'date':
                 if (strtolower($value) != "now()" && !preg_match("/^to_date\(/i", $value)) {
-					$db = Database::connect($this->database);
+                    $db = Database::connect($this->database);
                     $value = ($value === "" && $this->meta[$name]['required'] === false) ? "NULL" : $db->quote($value);
                 }
                 break;
@@ -596,7 +601,7 @@ class ActiveRecord {
                 if (array_key_exists("sprintf", $this->meta[$name]) && $this->meta[$name]['sprintf']) {
                     $value = sprintf($this->meta[$name]['sprintf'], $value);
                 }
-				$db = Database::connect($this->database);
+                $db = Database::connect($this->database);
                 $value = $db->quote($value);
                 break;
             case 'integer':
@@ -626,12 +631,13 @@ class ActiveRecord {
      * @param array $parms Array of extra paramteres to be used in the find_all call wrapped by this method.
      * @return mixed A single ActiveRecord instance, an array or null depending on the association type.
      */
-    private function fetch_assoc($name, array $parms = array()) {
+    private function fetch_assoc($name, array $parms = array())
+    {
         if (!$this->hasAssociation($name))
             return null;
 
         $ass = $this->getAssociationInfo($name);
-		
+
         $class = $ass['real_class'];
         $object = new $class();
         $value = $this->__get($ass['local_property']);
@@ -661,12 +667,12 @@ class ActiveRecord {
                 $result = $object->find_all($where, null, 0, null, "ASC", $join, null, $parms);
                 break;
 
-                /* Suggested replacement code in the future. Requires that the associations to the join table is known
-                $query = new ActiveRecordQuery(get_class($object));
-                $query->filterBy(jointable.localref, $this->prepare_property($ass['local_property']));
-                if ($object->default_order) $query->setSort($object->default_order);
-                return $query->execute;
-                 */
+            /* Suggested replacement code in the future. Requires that the associations to the join table is known
+            $query = new ActiveRecordQuery(get_class($object));
+            $query->filterBy(jointable.localref, $this->prepare_property($ass['local_property']));
+            if ($object->default_order) $query->setSort($object->default_order);
+            return $query->execute;
+             */
         }
 
         //Cache the result
@@ -674,10 +680,10 @@ class ActiveRecord {
 
         //Save the result as unmodified properties
         if ($result && $this->unmodified_properties !== null) {
-			$new = array();
-			foreach ($result as $k => $v) {
-				$new[$k] = is_object($v) ? clone $v : $v;
-			}
+            $new = array();
+            foreach ($result as $k => $v) {
+                $new[$k] = is_object($v) ? clone $v : $v;
+            }
             $this->unmodified_properties[$name] = $new;
         }
 
@@ -704,11 +710,12 @@ class ActiveRecord {
      * @param array $parms Array of extra options to the sqlSyntaxor used in find_all
      * @return boolean
      */
-    protected function find_by_property($name, $value, $parms=Array()) {
-		$this->execute_hooks("before_find");
+    protected function find_by_property($name, $value, $parms = array())
+    {
+        $this->execute_hooks("before_find");
         $constname = "ACTIVERECORD_STRICT_FIND_ONE";
         $strict = defined($constname) && constant($constname);
-		$gnyffed_name = SQLSyntaxor::addGnyfToKey($name, $this->getDatabaseDriver());
+        $gnyffed_name = SqlSyntaxor::addGnyfToKey($name, $this->getDatabaseDriver());
         $where = "$gnyffed_name = " . $this->prepare_property($name, $value);
         $limit = $strict ? 2 : 1;
 
@@ -719,7 +726,7 @@ class ActiveRecord {
         }
 
         $this->hydrate($result[0]);
-		$this->execute_hooks("after_find");
+        $this->execute_hooks("after_find");
         return true;
     }
 
@@ -736,8 +743,9 @@ class ActiveRecord {
      * @param array $parms Array of extra options to the sqlSyntaxor used in find_all
      * @return array
      */
-    protected function find_all_by_property($name, $value, $parms=array()) {
-		$gnyffed_name = SQLSyntaxor::addGnyfToKey($name, $this->getDatabaseDriver());
+    protected function find_all_by_property($name, $value, $parms = array())
+    {
+        $gnyffed_name = SqlSyntaxor::addGnyfToKey($name, $this->getDatabaseDriver());
         $where = "$gnyffed_name = " . $this->prepare_property($name, $value);
         return $this->find_all($where, null, 0, null, "ASC", null, null, $parms);
     }
@@ -779,28 +787,29 @@ class ActiveRecord {
      * The select clause can in conjunction with joins be used to select only
      * the fields from the FROM table.
      *
-     * @param mixed $where              See description above.
-     * @param int $limit                The number of rows to be returned
-     * @param int $limit_start          The firs row to be returned
-     * @param string $order_by_field    The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
-     * @param string $order             The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
-     * @param string $joins             String containing all joins and joinconditions for the query.
-     * @param string $select            The select clause for the query. This will default to "*" if none is given.
-     * @param array $parms              Allows possible options for SQLSyntaxor to be set. This should only be used of internal methods are known.
+     * @param mixed $where See description above.
+     * @param int $limit The number of rows to be returned
+     * @param int $limit_start The firs row to be returned
+     * @param string $order_by_field The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
+     * @param string $order The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
+     * @param string $joins String containing all joins and joinconditions for the query.
+     * @param string $select The select clause for the query. This will default to "*" if none is given.
+     * @param array $parms Allows possible options for SQLSyntaxor to be set. This should only be used of internal methods are known.
      * @return array of active record models matching the query
      */
-    protected function find_all_assoc($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC', $joins = "", $select = "", $parms=Array()) {
-		$optionsArray = array("TABLE" => $this->table_name);
+    protected function find_all_assoc($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC', $joins = "", $select = "", $parms = array())
+    {
+        $optionsArray = array("TABLE" => $this->table_name);
 
-	if ( isset($this->_cache) && $this->_cache ){
-		$cKey = $this->cache_prepend.':'.$this->table_name.':'.sha1(serialize(func_get_args()));
-		$cvalue = mCached::get($cKey);
-                if ( $cvalue ){
-			error_log('GOT IN CACHE: '.$this->table_name.' = '.$cKey);
-                        return unserialize($cvalue);
-		}
-	}
-	
+        if (isset($this->_cache) && $this->_cache) {
+            $cKey = $this->cache_prepend . ':' . $this->table_name . ':' . sha1(serialize(func_get_args()));
+            $cvalue = MemCache::get($cKey);
+            if ($cvalue) {
+                error_log('GOT IN CACHE: ' . $this->table_name . ' = ' . $cKey);
+                return unserialize($cvalue);
+            }
+        }
+
 
         //Where clause
         if ($where) {
@@ -819,8 +828,8 @@ class ActiveRecord {
         }
 
         //Order by clause
-        if ($order_by_field!==null) {
-            if ($order_by_field!="") {
+        if ($order_by_field !== null) {
+            if ($order_by_field != "") {
                 $optionsArray['ORDERFIELD'] = $order_by_field;
                 $optionsArray['ORDERTYPE'] = $order;
             }
@@ -849,31 +858,32 @@ class ActiveRecord {
 
         //Execute the query
         $db = $this->getDatabaseConnection();
-        $sql = SQLSyntaxor::getSelectSQL($optionsArray, $this->getDatabaseDriver());
+        $sql = SqlSyntaxor::getSelectSQL($optionsArray, $this->getDatabaseDriver());
 
-	$result = $this->query($sql,$db);
+        $result = $this->query($sql, $db);
         $arr = array();
         if ($result) {
             while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
                 $arr[] = $row;
             }
         }
-	if ( $this->_cache ){
-		mCached::set($cKey,serialize($arr));
-		$cKeys = mCached::get($this->cache_prepend.':list:'.$this->tablename);
-		if ( $cKeys ){
-			$all_cache_keys = unserialize($cKeys);
-		} else {
-			$all_cache_keys = array();
-		}
-		$all_cache_keys[] = $cKey;
-		mCached::set($this->cache_prepend.':list:'.$this->tablename,serialize($all_cache_keys));
-	}
+        if ($this->_cache) {
+            MemCache::set($cKey, serialize($arr));
+            $cKeys = MemCache::get($this->cache_prepend . ':list:' . $this->tablename);
+            if ($cKeys) {
+                $all_cache_keys = unserialize($cKeys);
+            } else {
+                $all_cache_keys = array();
+            }
+            $all_cache_keys[] = $cKey;
+            MemCache::set($this->cache_prepend . ':list:' . $this->tablename, serialize($all_cache_keys));
+        }
         return $arr;
     }
 
-    public function find_all($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC', $joins = "", $select = "", $parms=Array()) {
-		$this->execute_hooks("before_find");
+    public function find_all($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC', $joins = "", $select = "", $parms = array())
+    {
+        $this->execute_hooks("before_find");
         $assoc = $this->find_all_assoc($where, $limit, $limit_start, $order_by_field, $order, $joins, $select, $parms);
 
         $arr = array();
@@ -882,7 +892,7 @@ class ActiveRecord {
             $tmp->hydrate($row);
             $arr[] = $tmp;
         }
-		$this->execute_hooks("after_find", $arr);
+        $this->execute_hooks("after_find", $arr);
         return $arr;
     }
 
@@ -896,22 +906,23 @@ class ActiveRecord {
      * @param string $sql String containing the full SQL statement to be executed.
      * @return array Array of objects describing the resulting rows.
      */
-    function find_by_sql($sql) {
-	if ( isset($this->_cache) && $this->_cache ){
-		$cKey = $this->cache_prepend.':'.$this->table_name.':'.sha1(serialize(func_get_args()));
-		$cvalue = mCached::get($cKey);
-                if ( $cvalue ){
-			error_log('GOT IN CACHE: '.$this->table_name.' = '.$cKey);
-                        return unserialize($cvalue);
-		}
-	}
+    function find_by_sql($sql)
+    {
+        if (isset($this->_cache) && $this->_cache) {
+            $cKey = $this->cache_prepend . ':' . $this->table_name . ':' . sha1(serialize(func_get_args()));
+            $cvalue = MemCache::get($cKey);
+            if ($cvalue) {
+                error_log('GOT IN CACHE: ' . $this->table_name . ' = ' . $cKey);
+                return unserialize($cvalue);
+            }
+        }
         if (stripos($sql, "select") !== 0 || preg_match("/\b(update|delete|insert)\b/i", $sql)) {
             throw new Exception("Only Select statements are allowed in find_by_sql!");
         }
 
         $db = Database::connect($this->database);
-		$result = $this->query($sql,$db);
-		if(!$result){
+        $result = $this->query($sql, $db);
+        if (!$result) {
             $error = $db->errorInfo();
             trigger_error($error[2] . ": $sql");
             return false;
@@ -920,17 +931,17 @@ class ActiveRecord {
         while ($row = $result->fetchObject()) {
             $return_val[] = $row;
         }
-	if ( $this->_cache ){
-		mCached::set($cKey,serialize($return_val));
-		$cKeys = mCached::get($this->cache_prepend.':list:'.$this->tablename);
-		if ( $cKeys ){
-			$all_cache_keys = unserialize($cKeys);
-		} else {
-			$all_cache_keys = array();
-		}
-		$all_cache_keys[] = $cKey;
-		mCached::set($this->cache_prepend.':list:'.$this->tablename,serialize($all_cache_keys));
-	}
+        if ($this->_cache) {
+            MemCache::set($cKey, serialize($return_val));
+            $cKeys = MemCache::get($this->cache_prepend . ':list:' . $this->tablename);
+            if ($cKeys) {
+                $all_cache_keys = unserialize($cKeys);
+            } else {
+                $all_cache_keys = array();
+            }
+            $all_cache_keys[] = $cKey;
+            MemCache::set($this->cache_prepend . ':list:' . $this->tablename, serialize($all_cache_keys));
+        }
         return $return_val;
     }
 
@@ -941,14 +952,15 @@ class ActiveRecord {
      * method should not be used, as find_all provides the same functionality
      * with more flexibility and this method may be deprecated in the future.
      *
-     * @param mixed $where              See description above.
-     * @param int $limit                The number of rows to be returned
-     * @param int $limit_start          The firs row to be returned
-     * @param string $order_by_field    The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
-     * @param string $order             The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
+     * @param mixed $where See description above.
+     * @param int $limit The number of rows to be returned
+     * @param int $limit_start The firs row to be returned
+     * @param string $order_by_field The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
+     * @param string $order The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
      * @return array Array of the matching rows.
      */
-    function read($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC') {
+    function read($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC')
+    {
         return $this->find_all($where, $limit, $limit_start, $order_by_field, $order);
     }
 
@@ -964,7 +976,8 @@ class ActiveRecord {
      * @param mixed $where A where clause acceptable by find_all
      * @return ActiveRecord The first row matching the where clause.
      */
-    function find_first($where = null) {
+    function find_first($where = null)
+    {
         return array_shift($this->find_all($where, 1));
     }
 
@@ -994,7 +1007,8 @@ class ActiveRecord {
      * @param mixed $value The value to match for the primary key.
      * @return boolean Returns true if a value was found and hydrated onto this.
      */
-    function find($value) {
+    function find($value)
+    {
         $primary = $this->find_primaries();
 
         $constname = "ACTIVERECORD_STRICT_FIND_ONE";
@@ -1012,9 +1026,9 @@ class ActiveRecord {
             if (!is_array($value))
                 return false;
 
-            $where = Array();
+            $where = array();
             foreach ($primary as $index => $key) {
-				$key = SQLSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver());
+                $key = SqlSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver());
                 if (array_key_exists($key, $value))
                     $where[] = "$key = " . $this->prepare_property($key, $value[$key]);
                 elseif (array_key_exists($index, $value))
@@ -1028,7 +1042,7 @@ class ActiveRecord {
                 return false;
 
             $this->hydrate($result[0]);
-			$this->execute_hooks("after_find");
+            $this->execute_hooks("after_find");
             return true;
         }
     }
@@ -1045,7 +1059,8 @@ class ActiveRecord {
      * @param string $joins The join part of the query.
      * @return mixed The output of the aggregate function.
      */
-    protected function getAggregateValue($function, $field, $where="", $joins="") {
+    protected function getAggregateValue($function, $field, $where = "", $joins = "")
+    {
         $options = array();
         $options["TABLE"] = $this->table_name;
         $options["WHERE"] = trim("$where");
@@ -1056,7 +1071,7 @@ class ActiveRecord {
         }
 
         $db = $this->getDatabaseConnection();
-        $sql = SQLSyntaxor::getSelectSQL($options, $this->getDatabaseDriver());
+        $sql = SqlSyntaxor::getSelectSQL($options, $this->getDatabaseDriver());
 
         $result = $this->query($sql, $db);
         if (!$result)
@@ -1075,10 +1090,11 @@ class ActiveRecord {
      * @param array $options Additional options. May hold all options besides TABLE and WHERE.
      * @return array
      */
-    protected function list_by_property($field_to_list, $name, $value, $options) {
-		$db = $this->getDatabaseConnection();
-		$driver = $this->getDatabaseDriver();
-        $where = SQLSyntaxor::addGnyfToKey($name, $driver) . " = " . $this->prepare_property($name, $value);
+    protected function list_by_property($field_to_list, $name, $value, $options)
+    {
+        $db = $this->getDatabaseConnection();
+        $driver = $this->getDatabaseDriver();
+        $where = SqlSyntaxor::addGnyfToKey($name, $driver) . " = " . $this->prepare_property($name, $value);
         if ($options['WHERE']) {
             $where .= " AND " . $options['WHERE'];
         }
@@ -1087,7 +1103,7 @@ class ActiveRecord {
         $options["WHERE"] = $where;
         $options["SELECT"] = $field_to_list;
 
-        $sql = SQLSyntaxor::getSelectSQL($options, $driver);
+        $sql = SqlSyntaxor::getSelectSQL($options, $driver);
         $result = $this->query($sql, $db);
         if (!$result)
             return array();
@@ -1106,7 +1122,8 @@ class ActiveRecord {
      * @param string $joins String holding te join part of the query
      * @return type The number of rows the where and join parameter will yield.
      */
-    function select_count($where = null, $joins=Array()) {
+    function select_count($where = null, $joins = array())
+    {
         return $this->getAggregateValue("COUNT", 1, $where, $joins);
     }
 
@@ -1122,7 +1139,8 @@ class ActiveRecord {
      *
      * @param type $row
      */
-    function hydrate($row) {
+    function hydrate($row)
+    {
         $this->raw = $row;
         foreach (array_keys($this->meta) as $key) {
             if (array_key_exists($key, $row) && $row[$key] !== null) {
@@ -1133,7 +1151,8 @@ class ActiveRecord {
         }
     }
 
-    function is_dirty() {
+    function is_dirty()
+    {
         if (serialize($this->properties) != serialize($this->unmodified_properties))
             return true;
         else
@@ -1151,18 +1170,19 @@ class ActiveRecord {
      *
      * @return array
      */
-    function dirty_fields() {
+    function dirty_fields()
+    {
         $props = $this->properties;
         $uprops = $this->unmodified_properties;
 
-        if (!is_array($uprops)) $uprops = Array();
+        if (!is_array($uprops)) $uprops = array();
 
         if (is_array($this->associations)) {
             foreach (array_keys($this->associations) as $name) {
-			if(isset($props[$name])){
+                if (isset($props[$name])) {
                     unset($props[$name]);
                 }
-		if(isset($uprops[$name])){
+                if (isset($uprops[$name])) {
                     unset($uprops[$name]);
                 }
             }
@@ -1172,7 +1192,8 @@ class ActiveRecord {
     }
 
 
-    function is_new() {
+    function is_new()
+    {
         if ($this->properties[$this->find_primary()])
             return false;
         else
@@ -1182,7 +1203,8 @@ class ActiveRecord {
     /*
      * TODO: Review this function
      */
-    protected function validate_data($name, $value) {
+    protected function validate_data($name, $value)
+    {
         if (is_null($value)) {
             return NULL;
         }
@@ -1198,16 +1220,16 @@ class ActiveRecord {
                 return $value;
                 break;
             case 'integer':
-                    $testValue = ltrim($value,"0");
-                    if ($testValue=="" && $value==0) $testValue=0;
-                    $intval = filter_var($testValue,FILTER_VALIDATE_INT);
-                    if ($intval !== FALSE) {
-                        return $value;
-                    }
+                $testValue = ltrim($value, "0");
+                if ($testValue == "" && $value == 0) $testValue = 0;
+                $intval = filter_var($testValue, FILTER_VALIDATE_INT);
+                if ($intval !== FALSE) {
+                    return $value;
+                }
                 break;
             case 'double':
             case 'float':
-		$doubleval = filter_var($value,FILTER_VALIDATE_FLOAT);
+                $doubleval = filter_var($value, FILTER_VALIDATE_FLOAT);
                 if ($doubleval !== FALSE) {
                     return $value;
                 }
@@ -1219,12 +1241,14 @@ class ActiveRecord {
         throw new Exception("Invalid value for $name: '$value'");
     }
 
-    function getNumberOfAffectedRows() {
+    function getNumberOfAffectedRows()
+    {
         return $this->affected_rows;
     }
 
-	function insert(){
-		$this->validate(true);
+    function insert()
+    {
+        $this->validate(true);
 
         $sql_fields = array();
         $sql_values = array();
@@ -1234,11 +1258,11 @@ class ActiveRecord {
                 $this->$timestamp = "now()";
             }
         }
-		
+
         foreach ($this->properties as $key => $value) {
             if (!$this->hasColumn($key)) continue;
 
-            if (($this->meta[$key]['required'] == false || $this->meta[$key]['extra'] == 'auto_increment' || $this->meta[$key]['default'] != '') && ( isset($this->properties[$key]) === false || $this->properties[$key] === "NULL")) {
+            if (($this->meta[$key]['required'] == false || $this->meta[$key]['extra'] == 'auto_increment' || $this->meta[$key]['default'] != '') && (isset($this->properties[$key]) === false || $this->properties[$key] === "NULL")) {
                 continue;
             } elseif (is_array($value) && !isset($this->meta[$key])) {
                 continue;
@@ -1249,7 +1273,7 @@ class ActiveRecord {
             if (!isset($this->meta[$key])) {
                 continue;
             }
-            array_push($sql_fields, SQLSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()));
+            array_push($sql_fields, SqlSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()));
             array_push($sql_values, $this->prepare_property($key));
         }
         $fields = join(", ", $sql_fields);
@@ -1259,22 +1283,23 @@ class ActiveRecord {
             "FIELDS" => $fields,
             "VALUES" => $values
         );
-		$db = Database::connect($this->database);
-		$sql = SQLSyntaxor::getCreateSQL($optionsArray, $this->getDatabaseDriver());
-		$result = $this->query($sql, $db);
+        $db = Database::connect($this->database);
+        $sql = SqlSyntaxor::getCreateSQL($optionsArray, $this->getDatabaseDriver());
+        $result = $this->query($sql, $db);
 
-		if(!$result){
+        if (!$result) {
             $errorInfo = $db->errorInfo();
             throw new Exception("Failed to create the row in database - " . $errorInfo[2] . " - $sql");
-		}
+        }
 
-	     $this->flush_cache(); 
-		return $result;
-	}
+        $this->flush_cache();
+        return $result;
+    }
 
-    function create($include_assoc = true) {
-		$this->execute_hooks("before_create");
-		$result = $this->insert();
+    function create($include_assoc = true)
+    {
+        $this->execute_hooks("before_create");
+        $result = $this->insert();
         try {
             $pri = $this->find_primary();
         } catch (Exception $e) {
@@ -1282,26 +1307,27 @@ class ActiveRecord {
         }
         if ($pri) {
             if ($this->$pri === null) {
-				$db = Database::connect($this->database);
-				$this->$pri = $this->getLastInsertID($db);
+                $db = Database::connect($this->database);
+                $this->$pri = $this->getLastInsertID($db);
             }
             $this->find($this->$pri);
         }
         if ($include_assoc) {
             $this->update_assoc();
         }
-		$this->execute_hooks("after_create");
+        $this->execute_hooks("after_create");
     }
 
-    function update($include_assoc = true, $guess = false, $extra_cond = '') {
-		$this->execute_hooks("before_update");
+    function update($include_assoc = true, $guess = false, $extra_cond = '')
+    {
+        $this->execute_hooks("before_update");
         if (!$this->is_dirty()) {
             return true;
         }
 
         $this->validate(true);
 
-        
+
         $sql_values = array();
         foreach ($this->find_timestamps() as $key => $timestamp) {
             if ($this->unmodified_properties[$timestamp] == $this->properties[$timestamp] && $key == "update") {
@@ -1309,12 +1335,12 @@ class ActiveRecord {
             }
         }
         foreach ($this->dirty_fields() as $key => $value) {
-			if(!array_key_exists($key,$this->meta)) continue;
+            if (!array_key_exists($key, $this->meta)) continue;
             if ($this->meta[$key]['required'] == true && ($value === null || $value === "NULL")) {
                 throw new Exception("$key is required for table . {$this->table_name}");
             }
             if (false !== $this->prepare_property($key)) {
-				array_push($sql_values, SQLSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()) . " = " . $this->prepare_property($key));
+                array_push($sql_values, SqlSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()) . " = " . $this->prepare_property($key));
             }
         }
         if ($sql_values) {
@@ -1325,14 +1351,14 @@ class ActiveRecord {
                     if (!isset($this->properties[$primary]) || !isset($this->unmodified_properties[$primary])) {
                         throw new Exception("Primary field {$primary} cannot be empty on UPDATE");
                     }
-                    $where[] = SQLSyntaxor::addGnyfToKey($primary, $this->getDatabaseDriver()) . ' = ' . $this->prepare_property($primary, $this->unmodified_properties[$primary]);
+                    $where[] = SqlSyntaxor::addGnyfToKey($primary, $this->getDatabaseDriver()) . ' = ' . $this->prepare_property($primary, $this->unmodified_properties[$primary]);
                 }
                 $where = join(" and ", $where);
             } elseif (count($this->unmodified_properties) > 0 && $guess) {
                 $sql_values = array();
                 foreach ($this->unmodified_properties as $key => $value) {
                     if ($value) {
-						array_push($sql_values, SQLSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()) . " = " . $this->prepare_property($key));
+                        array_push($sql_values, SqlSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()) . " = " . $this->prepare_property($key));
                     }
                 }
                 $where = join(' and ', $sql_values);
@@ -1342,64 +1368,66 @@ class ActiveRecord {
             if ($extra_cond != '')
                 $where .= ' ' . $extra_cond;
             $optionsArray = array("TABLE" => $this->table_name, "WHERE" => $where, "VALUES" => $values);
-            $sql = SQLSyntaxor::getUpdateSQL($optionsArray, $this->getDatabaseDriver());
-			$db = Database::connect($this->database);
+            $sql = SqlSyntaxor::getUpdateSQL($optionsArray, $this->getDatabaseDriver());
+            $db = Database::connect($this->database);
             $result = $this->query($sql, $db);
             if (!$result) {
-                throw new Exception(print_r($db->errorInfo(), 1) . $sql . "\n");
+                throw new Exception(activerecord . phpprint_r($db->errorInfo(), 1) . $sql . "\n");
             }
             $this->affected_rows = $result->rowCount();
-	    if($this->affected_rows) $this->flush_cache(); 
+            if ($this->affected_rows) $this->flush_cache();
         }
         if ($include_assoc) {
             $this->update_assoc();
         }
         $this->unmodified_properties = $this->properties;
-		$this->execute_hooks("after_update");
+        $this->execute_hooks("after_update");
     }
 
-    function flush_cache(){
-	    if ( isset($this->_cache) && $this->_cache ){
-		$cKeys = mCached::get($this->cache_prepend.':list:'.$this->tablename);
-		if ( $cKeys ){
-			$all_cache_keys = unserialize($cKeys);
-			foreach ( $all_cache_keys as $cache_key ){
-				mCached::delete($cache_key);
-			}
-		}
-	    }
+    function flush_cache()
+    {
+        if (isset($this->_cache) && $this->_cache) {
+            $cKeys = MemCache::get($this->cache_prepend . ':list:' . $this->tablename);
+            if ($cKeys) {
+                $all_cache_keys = unserialize($cKeys);
+                foreach ($all_cache_keys as $cache_key) {
+                    MemCache::delete($cache_key);
+                }
+            }
+        }
     }
 
-    function save($include_assoc = true) {
-		$this->execute_hooks("before_save");
+    function save($include_assoc = true)
+    {
+        $this->execute_hooks("before_save");
         $primary = $this->find_primaries();
-        if (count($primary)) $primary=$primary[0];
-        else $primary=null;
+        if (count($primary)) $primary = $primary[0];
+        else $primary = null;
 
         if (($primary && isset($this->properties[$primary])) || $this->unmodified_properties) {
             $returnval = $this->update($include_assoc);
-        }
-        else
+        } else
             $returnval = $this->create($include_assoc);
-		$this->execute_hooks("after_save");
-		return $returnval;
+        $this->execute_hooks("after_save");
+        return $returnval;
     }
 
-    function destroy($guess = false) {
-		$this->execute_hooks("before_destroy");
+    function destroy($guess = false)
+    {
+        $this->execute_hooks("before_destroy");
         if ($this->find_primaries()) {
             $where = array();
             foreach ($this->find_primaries() as $primary) {
                 if (!isset($this->properties[$primary])) {
                     throw new Exception("Primary field {$primary} cannot be empty on DELETE");
                 }
-                $where[] = SQLSyntaxor::addGnyfToKey($primary, $this->getDatabaseDriver()) . ' = ' . $this->prepare_property($primary);
+                $where[] = SqlSyntaxor::addGnyfToKey($primary, $this->getDatabaseDriver()) . ' = ' . $this->prepare_property($primary);
             }
             $where = join(" and ", $where);
         } elseif ($guess) {
             $sql_values = array();
             foreach ($this->unmodified_properties as $key => $value) {
-                array_push($sql_values, SQLSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()) . "=" . $this->prepare_property($key, $value));
+                array_push($sql_values, SqlSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver()) . "=" . $this->prepare_property($key, $value));
             }
             $where = join(" and ", $sql_values);
         } else {
@@ -1409,18 +1437,19 @@ class ActiveRecord {
             "TABLE" => $this->table_name,
             "WHERE" => $where
         );
-        $sql = SQLSyntaxor::getDestroySQL($optionsArray, $this->getDatabaseDriver());
-		$db = Database::connect($this->database);
-		$result = $this->query($sql,$db);
+        $sql = SqlSyntaxor::getDestroySQL($optionsArray, $this->getDatabaseDriver());
+        $db = Database::connect($this->database);
+        $result = $this->query($sql, $db);
         if (!$result) {
-            throw new Exception(print_r($db->errorInfo(), 1) . $sql . "\n");
+            throw new Exception(activerecord . phpprint_r($db->errorInfo(), 1) . $sql . "\n");
         }
         $this->affected_rows = $result->rowCount();
-		$this->execute_hooks("after_destroy");
+        $this->execute_hooks("after_destroy");
     }
 
-    function update_assoc() {
-        
+    function update_assoc()
+    {
+
         if (!is_array($this->associations))
             return;
         foreach ($this->associations as $name => $assoc) {
@@ -1462,8 +1491,8 @@ class ActiveRecord {
                     /*
                      * Objects to be deleted can easily be packed into a single sql statement.
                      */
-					$gnyffed_local_property = SQLSyntaxor::addGnyfToKey($assoc['join_local_property'], $this->getDatabaseDriver());
-					$gnyffed_class_property = SQLSyntaxor::addGnyfToKey($assoc['join_class_property'], $this->getDatabaseDriver());
+                    $gnyffed_local_property = SqlSyntaxor::addGnyfToKey($assoc['join_local_property'], $this->getDatabaseDriver());
+                    $gnyffed_class_property = SqlSyntaxor::addGnyfToKey($assoc['join_class_property'], $this->getDatabaseDriver());
                     if ($objectsToUnlink) {
                         $classProps = array();
                         foreach ($objectsToUnlink as $obj) {
@@ -1472,10 +1501,10 @@ class ActiveRecord {
                         $optionsArray = array(
                             "TABLE" => $assoc['join_table'],
                             "WHERE" => $gnyffed_local_property . " = " .
-                            $this->prepare_property($assoc['local_property'], $this->unmodified_properties[$assoc['local_property']]) .
-                            " AND " . $gnyffed_class_property . " IN(" . join(",", $classProps) . ");"
+                                $this->prepare_property($assoc['local_property'], $this->unmodified_properties[$assoc['local_property']]) .
+                                " AND " . $gnyffed_class_property . " IN(" . join(",", $classProps) . ");"
                         );
-                        $unlinkSql = SQLSyntaxor::getDestroySQL($optionsArray, $this->getDatabaseDriver());
+                        $unlinkSql = SqlSyntaxor::getDestroySQL($optionsArray, $this->getDatabaseDriver());
                     }
                     /*
                      * Objects to link needs to be set as many different statements
@@ -1494,21 +1523,21 @@ class ActiveRecord {
                                 "FIELDS" => $gnyffed_local_property . ", " . $gnyffed_class_property,
                                 "VALUES" => $this->prepare_property($assoc['local_property']) . ", " . $classProp
                             );
-							$linkSqls[] = SQLSyntaxor::getCreateSQL($optionsArray, $this->getDatabaseDriver());
+                            $linkSqls[] = SqlSyntaxor::getCreateSQL($optionsArray, $this->getDatabaseDriver());
                         }
                     }
 
                     /*
                      * Execute all the SQL.
                      */
-			$db = Database::connect($this->database);
-			if(isset($unlinkSql)){
-				$this->query($unlinkSql, $db);
-			}
-			if(isset($linkSqls)){
-				foreach($linkSqls as $sql){
-					$this->query($sql,$db);
-				}
+                    $db = Database::connect($this->database);
+                    if (isset($unlinkSql)) {
+                        $this->query($unlinkSql, $db);
+                    }
+                    if (isset($linkSqls)) {
+                        foreach ($linkSqls as $sql) {
+                            $this->query($sql, $db);
+                        }
                     }
                 }
             }
@@ -1519,35 +1548,39 @@ class ActiveRecord {
      * a more robust compare function used to see if associations have changed.
      */
 
-    function cmpFunc($a, $b) {
+    function cmpFunc($a, $b)
+    {
         if (serialize($a) === serialize($b))
             return 0;
         return serialize($a) > serialize($b) ? -1 : 1;
     }
 
-	protected function query($sql, $db){
-		if(isset($this->debug) && $this->debug)
-			error_log($sql);
-		return $db->query($sql);
-	}
+    protected function query($sql, $db)
+    {
+        if (isset($this->debug) && $this->debug)
+            error_log($sql);
+        return $db->query($sql);
+    }
 
-    function getLastInsertID($db) {
+    function getLastInsertID($db)
+    {
         $id = $db->lastInsertId();
         if (!$id) {
-            $sql = SQLSyntaxor::getLastInsertIdSQL($this->getDatabaseDriver());
+            $sql = SqlSyntaxor::getLastInsertIdSQL($this->getDatabaseDriver());
             if ($sql == "") {
                 return false;
             }
-	    $id = $this->query($sql, $db)->fetchColumn();
+            $id = $this->query($sql, $db)->fetchColumn();
         }
         return $id;
     }
 
-    public function validate($throw=false) {
+    public function validate($throw = false)
+    {
         $methods = get_class_methods($this);
         foreach ($methods as $method) {
             if (substr($method, 0, 11) == "__validate_") {
-                if (true !== ($msg = call_user_func(Array($this, $method)))) {
+                if (true !== ($msg = call_user_func(array($this, $method)))) {
                     if ($throw) {
                         throw new ActiveRecordValidationException($msg);
                     } else {
@@ -1560,47 +1593,52 @@ class ActiveRecord {
         return true;
     }
 
-	public static function add_generic_hook($hookpoint, $function){
-		self::validate_hookpoint($hookpoint);
-		self::$generic_hooks[$hookpoint][] = $function;
-	}
+    public static function add_generic_hook($hookpoint, $function)
+    {
+        self::validate_hookpoint($hookpoint);
+        self::$generic_hooks[$hookpoint][] = $function;
+    }
 
-	public function add_model_hook($hookpoint, $function){
-		self::validate_hookpoint($hookpoint);
-		$this->specific_model_hooks[$hookpoint][] = $function;
-	}
+    public function add_model_hook($hookpoint, $function)
+    {
+        self::validate_hookpoint($hookpoint);
+        $this->specific_model_hooks[$hookpoint][] = $function;
+    }
 
-	private static function validate_hookpoint($hookpoint){
-		if(!in_array($hookpoint, array(
-			'before_find',
-			'after_find',
-			'before_update',
-			'after_update',
-			'before_create',
-			'after_create',
-			'before_save',
-			'after_save'))){
-			throw new ActiveRecordValidationException("Unknown hookpoint: $hookpoint");
-		}
-		return true;
-	}
+    private static function validate_hookpoint($hookpoint)
+    {
+        if (!in_array($hookpoint, array(
+            'before_find',
+            'after_find',
+            'before_update',
+            'after_update',
+            'before_create',
+            'after_create',
+            'before_save',
+            'after_save'))) {
+            throw new ActiveRecordValidationException("Unknown hookpoint: $hookpoint");
+        }
+        return true;
+    }
 
-	public function execute_hooks($hookpoint, $extra_params = array()){
-		if(isset(self::$generic_hooks[$hookpoint])){
-			foreach(self::$generic_hooks[$hookpoint] as $function){
-				call_user_func($function, $this, $extra_params);
-			}
-		}
+    public function execute_hooks($hookpoint, $extra_params = array())
+    {
+        if (isset(self::$generic_hooks[$hookpoint])) {
+            foreach (self::$generic_hooks[$hookpoint] as $function) {
+                call_user_func($function, $this, $extra_params);
+            }
+        }
 
-		if(isset($this->specific_model_hooks[$hookpoint])){
-			foreach($this->specific_model_hooks[$hookpoint] as $function){
-				call_user_func($function, $this, $extra_params);
-			}
-		}
-	}
+        if (isset($this->specific_model_hooks[$hookpoint])) {
+            foreach ($this->specific_model_hooks[$hookpoint] as $function) {
+                call_user_func($function, $this, $extra_params);
+            }
+        }
+    }
 
-	public function getDatabaseDriver(){
-		return ActiveRecordDatabase::getDatabaseDriver($this->database);
-	}
+    public function getDatabaseDriver()
+    {
+        return ActiveRecordDatabase::getDatabaseDriver($this->database);
+    }
 
 }

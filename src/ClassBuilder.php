@@ -1,64 +1,8 @@
-#!/usr/bin/php
 <?php
 
-require_once "./class_loader.php";
-require_once "lib/pluralizer.php";
+namespace Nueaf\Uteeni;
 
-
-echo <<<EOM
-Velkommen til class builder
-This script generates models based on existing tables. Edit database.php and this file to set available databases.
-EOM;
-
-$options = array("db.ini", "Database", "Table name", "repository", "prefix", "suffix");
-foreach($options as $key => $option){
-	switch($option){
-		case 'db.ini':
-			$db_ini_path = count($argv)>1?$argv[1]:"";
-			while(!file_exists($db_ini_path)){
-				echo "\n\nSELECT db.ini path: ";
-				$db_ini_path = trim(fread(STDIN, 1024));
-			}
-			ActiveRecordDatabase::parsedbini($db_ini_path, true);
-			$databases = array_keys(ActiveRecordDatabase::$dbconfig);
-			$databases = str_replace("Database", "", $databases);
-			array_unshift($databases, 'CANCEL');
-			break;
-		case 'Database':
-			echo "Select database: \n";
-			foreach($databases as $db_key => $database){
-				echo $db_key . ": " . $database  . "\n";
-			}
-			$database = $databases[trim(fread(STDIN, 2))];
-			if($database == "CANCEL")
-				exit;
-			break;
-		case 'Table name':
-			echo "Enter tablename(komma seperates): ";
-			$table = trim(fread(STDIN, 1024));
-			break;
-	}
-}
-
-echo "\n";
-if (trim($table)=="*") {
-	$conn = Database::connect($database);
-	$q = $conn->query("SHOW TABLES;");
-	$tables = array();
-	while ($r = $q->fetch(PDO::FETCH_COLUMN)) {
-		$tables[] = $r;
-	}
-} else {
-	$tables = explode(",", $table);
-}
-
-foreach($tables as $table){
-	$builder = new class_builder($table, $database);
-	$builder->parseTable();
-	echo $builder->buildClass();
-}
-echo "\n";
-class class_builder{
+class ClassBuilder{
 
 	private $fields = array();
 	private $assoc = array();
@@ -72,19 +16,21 @@ class class_builder{
 	private $lineBreak = "\n";
 	private $classPrefix = "";
 	private $classSuffix = "";
+    private $dbConfig;
 
-	public function __construct($tableName, $database = "mysql"){
+    public function __construct($tableName, $database = "mysql"){
 		$this->tableName = $tableName;
 		$this->database  = strtoupper($database);
 		$this->conn = Database::connect($database);
 
-		$this->repository = ActiveRecordDatabase::$dbconfig[$this->database."Database"]['repository'] ?: "../models";
-		$this->classPrefix = ActiveRecordDatabase::$dbconfig[$this->database."Database"]['prefix'];
-		$this->classSuffix = ActiveRecordDatabase::$dbconfig[$this->database."Database"]['suffix'];
+        $this->dbConfig = ActiveRecordDatabase::getConfig();
+        $this->repository = $this->dbConfig[$this->database."Database"]['repository'] ?: "../models";
+		$this->classPrefix = $this->dbConfig[$this->database."Database"]['prefix'];
+		$this->classSuffix = $this->dbConfig[$this->database."Database"]['suffix'];
 	}
 
 	public function parseTable(){
-		$functionName = "parse" . ucfirst(ActiveRecordDatabase::$dbconfig[$this->database."Database"]["type"]) . "Table";
+		$functionName = "parse" . ucfirst($this->dbConfig[$this->database."Database"]["type"]) . "Table";
 		$this->$functionName();
 	}
 
@@ -103,7 +49,7 @@ class class_builder{
 			$this->fields[$rows['Field']] = $meta;
 		}
 
-		$sql = "SELECT COUNT(1) AS cnt, kcu.* FROM information_schema.key_column_usage kcu WHERE TABLE_SCHEMA='" . ActiveRecordDatabase::$dbconfig[$this->database."Database"]["db"] . "' AND '{$this->tableName}' IN (TABLE_NAME,REFERENCED_TABLE_NAME) AND REFERENCED_TABLE_SCHEMA IS NOT NULL GROUP BY CONSTRAINT_NAME HAVING cnt=1";
+		$sql = "SELECT COUNT(1) AS cnt, kcu.* FROM information_schema.key_column_usage kcu WHERE TABLE_SCHEMA='" . $this->dbConfig[$this->database."Database"]["db"] . "' AND '{$this->tableName}' IN (TABLE_NAME,REFERENCED_TABLE_NAME) AND REFERENCED_TABLE_SCHEMA IS NOT NULL GROUP BY CONSTRAINT_NAME HAVING cnt=1";
 		$result = $this->conn->query($sql);
 		$prefix_classes = Array();
 		foreach($result as $rows) {

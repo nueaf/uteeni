@@ -1,4 +1,7 @@
 <?php
+
+namespace Nueaf\Uteeni;
+
 /**
  * Memechache support enabling<br />
  * supports model based memcache suport, thus specific define which table classes that should be used by memcache
@@ -6,11 +9,7 @@
  * @author Søren C. Hansen
  *
  */
-
-/**
- * Support class for memcache (static)
- */ 
-class mCached {
+class MemCache {
 
 	/**
 	 * if basic setup is done

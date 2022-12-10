@@ -1,6 +1,8 @@
 #!/usr/bin/php
 <?php
 
+namespace Nueaf\Uteeni;
+
 class Pluralizer {
     static $plural = array(
         '/(quiz)$/i'               => "$1zes",

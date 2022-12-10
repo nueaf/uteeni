@@ -1,5 +1,7 @@
 <?php
 
+namespace Nueaf\Uteeni;
+
 class Criteria {
 	private $criteria = array();
 	
