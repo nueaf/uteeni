@@ -77,8 +77,12 @@ class ActiveRecordDatabase
         $dbConfig['driver_options'] = 'array()';
         switch ($dbConfig["type"]) {
             case 'mysql':
-                $dbConfig['driver_options'] = isset($dbConfig['charset']) && $dbConfig['charset'] ? 'array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES ' . $dbConfig['charset'] . '")' : 'array()';
-                $dbConfig['dsn'] = 'self::$type.":host=".self::$host.(self::$port?":".self::$port:"").";dbname=".self::$db';
+                $dbConfig['driver_options'] = []; ;
+                if (isset($dbConfig['charset']) && $dbConfig['charset']) {
+                    $charset = $dbConfig['charset'];
+                    $dbConfig['driver_options'] = array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES $charset");
+                }
+                $dbConfig['dsn'] = $dbConfig["type"] . ":host=" . $dbConfig["host"] . ($dbConfig["port"] ? ":" . $dbConfig["port"] : "") . ";dbname=" . $dbConfig["db"];
                 break;
             case 'oci':
                 $dbConfig['dsn'] = 'self::$type.":dbname=//".self::$host.(self::$port?":".self::$port:"")."/".self::$db' . $charset;

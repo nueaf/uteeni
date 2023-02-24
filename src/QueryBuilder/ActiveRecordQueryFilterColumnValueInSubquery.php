@@ -5,6 +5,15 @@ namespace Nueaf\Uteeni\QueryBuilder;
 class ActiveRecordQueryFilterColumnValueInSubquery extends ActiveRecordQueryFilter
 {
 
+    private $subqueryColumn;
+    private $subquery;
+    /**
+     * @var mixed|string
+     */
+    private $operator;
+    private $outerColumn;
+    private $query;
+
     public function __construct($query, $outerColumn, $subquery, $subqueryColumn, $operator = "IN")
     {
         $this->query = $query;

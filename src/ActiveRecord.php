@@ -5,6 +5,8 @@ namespace Nueaf\Uteeni;
 use Nueaf\Uteeni\Exceptions\ActiveRecordMethodException;
 use Nueaf\Uteeni\Exceptions\ActiveRecordPropertyException;
 use Nueaf\Uteeni\Exceptions\ActiveRecordValidationException;
+use Exception;
+use PDO;
 
 /**
  * The active record base class.
@@ -1372,7 +1374,7 @@ class ActiveRecord
             $db = Database::connect($this->database);
             $result = $this->query($sql, $db);
             if (!$result) {
-                throw new Exception(activerecord . phpprint_r($db->errorInfo(), 1) . $sql . "\n");
+                throw new Exception(activerecord . print_r($db->errorInfo(), 1) . $sql . "\n");
             }
             $this->affected_rows = $result->rowCount();
             if ($this->affected_rows) $this->flush_cache();
@@ -1441,7 +1443,7 @@ class ActiveRecord
         $db = Database::connect($this->database);
         $result = $this->query($sql, $db);
         if (!$result) {
-            throw new Exception(activerecord . phpprint_r($db->errorInfo(), 1) . $sql . "\n");
+            throw new Exception(activerecord . print_r($db->errorInfo(), 1) . $sql . "\n");
         }
         $this->affected_rows = $result->rowCount();
         $this->execute_hooks("after_destroy");

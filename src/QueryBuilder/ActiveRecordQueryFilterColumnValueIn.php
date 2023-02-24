@@ -7,6 +7,10 @@ namespace Nueaf\Uteeni\QueryBuilder;
  */
 class ActiveRecordQueryFilterColumnValueIn extends ActiveRecordQueryFilter
 {
+    private string $operator;
+    private array $values;
+    private string $column;
+    private ActiveRecordQuery $query;
 
     /**
      * Constructor for the filter

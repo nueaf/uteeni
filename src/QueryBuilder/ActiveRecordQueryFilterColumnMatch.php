@@ -5,6 +5,11 @@ namespace Nueaf\Uteeni\QueryBuilder;
 class ActiveRecordQueryFilterColumnMatch extends ActiveRecordQueryFilter
 {
 
+    private $query;
+    private $column1;
+    private $column2;
+    private $operator;
+
     public function __construct($query, $column1, $column2, $operator = "=")
     {
         $this->query = $query;

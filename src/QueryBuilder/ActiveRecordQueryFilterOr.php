@@ -9,6 +9,9 @@ namespace Nueaf\Uteeni\QueryBuilder;
  */
 class ActiveRecordQueryFilterOr extends ActiveRecordQueryFilter
 {
+
+    private array $parts;
+    
     /**
      * Constructor for the filter.
      *

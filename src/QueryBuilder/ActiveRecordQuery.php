@@ -2,6 +2,11 @@
 
 namespace Nueaf\Uteeni\QueryBuilder;
 
+use Exception;
+use Nueaf\Uteeni\Database;
+use Nueaf\Uteeni\SqlSyntaxor;
+use PDO;
+
 /**
  * @method ActiveRecordQuery filterBy($col, $value, $operator="=") {
  * @method ActiveRecordQuery filterByOr(ActiveRecordQueryFilter $part1, ActiveRecordQueryFilter $part2) {
@@ -45,6 +50,8 @@ class ActiveRecordQuery {
      * The constuctor expects to known the table or view model to select from.
      *
      * @param string $model The name of the model class to be used as base for the query
+     * @throws Exception
+     * @throws Exception
      */
     public function __construct($model) {
         if (!class_exists($model)) {
@@ -413,8 +420,8 @@ class ActiveRecordQuery {
      * association on an aliased table. Same rules apply here as for
      * [associationname].[columnname];
      *
-     * @param type $column
-     * @param type $direction
+     * @param string $column
+     * @param string $direction
      */
     public function setSort($column=null, $direction=ActiveRecordQuery::SORT_ASC) {
         $this->sorts = Array();
@@ -437,18 +444,13 @@ class ActiveRecordQuery {
      * case of the two sorts [associationname].[columnname] and
      * [aliasname].[columnname] appears to be the same during evaluation.
      *
-     * @param type $column
-     * @param type $direction
+     * @param string $column
+     * @param string $direction
      */
     public function addSort($column=null, $direction=ActiveRecordQuery::SORT_ASC) {
         if ($column) {
             $this->sorts[$column] = $direction;
-        } else {
-            if ($obj->default_order) {
-                $this->sorts[$obj->default_order] = ActiveRecordQuery::SORT_ASC;
-            }
         }
-
         return $this;
     }
 
@@ -716,7 +718,7 @@ class ActiveRecordQuery {
      * Only has_one associations are linked by this method, as has_many may be
      * halfed by a limit elsewhere in the query.
      *
-     * @param indexBy The name of the field or property to index the result by
+     * @param string $indexBy The name of the field or property to index the result by
      * @return array
      */
     public function execute($indexBy=null, $dontHydrate = false) {

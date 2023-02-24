@@ -2,11 +2,28 @@
 
 namespace Nueaf\Uteeni\QueryBuilder;
 
+use Exception;
+
 /**
  * Filter class for comparing a field with a certain value.
  */
 class ActiveRecordQueryFilterColumnValue extends ActiveRecordQueryFilter
 {
+    /**
+     * @var null
+     */
+    private $_cached_string;
+    /**
+     * @var null
+     */
+    private $_old_value;
+    /**
+     * @var mixed
+     */
+    private $value;
+    private string $operator;
+    private string $column;
+    private ActiveRecordQuery $query;
 
     /**
      * Constructor for the filter

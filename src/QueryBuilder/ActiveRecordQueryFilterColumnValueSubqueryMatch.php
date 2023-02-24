@@ -5,6 +5,19 @@ namespace Nueaf\Uteeni\QueryBuilder;
 class ActiveRecordQueryFilterColumnValueSubqueryMatch extends ActiveRecordQueryFilter
 {
 
+    private $subqueryColumn;
+    private $subquery;
+    /**
+     * @var mixed|string
+     */
+    private $aggregate;
+    /**
+     * @var mixed|string
+     */
+    private $operator;
+    private $value;
+    private $query;
+
     public function __construct($query, $value, $subquery, $subqueryColumn, $aggregate = "MAX", $operator = "=")
     {
         $this->query = $query;
