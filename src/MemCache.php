@@ -67,7 +67,7 @@ class MemCache
 
         // Connect and "singleton" store the memcache instance
         // TODO - how do we get connection info for the memcache server?
-        self::$memcache = new Memcached;
+        self::$memcache = new \Memcached();
         self::$memcache->addServer(self::$server, 11211);
 
     }
@@ -75,9 +75,9 @@ class MemCache
     /**
      * Checks if memcache is runnable
      *
-     * @return boolean
+     * @return bool
      */
-    public function runnable()
+    public static function runnable(): bool
     {
         /**
          * Run setup
