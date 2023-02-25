@@ -71,7 +71,12 @@ class ActiveRecordQuery
         $this->setSort();
     }
 
-    public static function reverseJoin($class, $join)
+    /**
+     * @param $class
+     * @param $join
+     * @return string
+     */
+    public static function reverseJoin($class, $join): string
     {
         $trimmedJoin = trim($join, ".");
         $remainingJoin = null;
@@ -96,6 +101,10 @@ class ActiveRecordQuery
         return $result;
     }
 
+    /**
+     * @param $modelName
+     * @return mixed|string
+     */
     protected function createAlias($modelName)
     {
         $alias_base = strtolower(preg_replace('/[a-z]/', '', $modelName));
@@ -115,11 +124,19 @@ class ActiveRecordQuery
         return $alias;
     }
 
+    /**
+     * @return mixed|string|null
+     */
     public function getMainAlias()
     {
         return $this->mainAlias;
     }
 
+    /**
+     * @param $fromAlias
+     * @param $joinType
+     * @return array|mixed|null[]
+     */
     protected function getJoinedAliases($fromAlias=null, $joinType=null)
     {
         if($joinType === null) {
@@ -146,7 +163,12 @@ class ActiveRecordQuery
         return $aliases;
     }
 
-    protected function getAliasColumns($alias=null, $joinType=null)
+    /**
+     * @param $alias
+     * @param $joinType
+     * @return array
+     */
+    protected function getAliasColumns($alias=null, $joinType=null): array
     {
         $result = Array();
         foreach ($this->getJoinedAliases($alias, $joinType) as $alias => $model) {
@@ -160,11 +182,19 @@ class ActiveRecordQuery
         return $result;
     }
 
-    public function hasAlias($alias)
+    /**
+     * @param $alias
+     * @return bool
+     */
+    public function hasAlias($alias): bool
     {
         return array_key_exists($alias, $this->aliases);
     }
 
+    /**
+     * @param $alias
+     * @return mixed|null
+     */
     public function getAlias($alias)
     {
         if (!$this->hasAlias($alias)) { return null;
@@ -172,6 +202,13 @@ class ActiveRecordQuery
         return $this->aliases[$alias];
     }
 
+    /**
+     * @param $expression
+     * @param $name
+     * @param $alias
+     * @return void
+     * @throws Exception
+     */
     public function addCalculatedColumn($expression, $name, $alias=null)
     {
         $tokens = Array(
@@ -291,7 +328,14 @@ class ActiveRecordQuery
         $this->calculatedColumns[$name] = Array("expression"=>$result, "alias"=>$alias, "column"=>$firstColumn, "name"=>$name);
     }
 
-    public function translateColumnName($column, $alias=null, $allowSelectColumns = false)
+    /**
+     * @param $column
+     * @param $alias
+     * @param $allowSelectColumns
+     * @return array
+     * @throws Exception
+     */
+    public function translateColumnName($column, $alias=null, $allowSelectColumns = false): array
     {
         //If no alias is given, we need to find the alias
         if ($alias == null) {
@@ -348,6 +392,16 @@ class ActiveRecordQuery
         return Array("alias" => $alias, "column" => $column, "expression"=>$expression, "name"=>$column);
     }
 
+    /**
+     * @param $association
+     * @param $alias
+     * @param $type
+     * @param $forceNew
+     * @param ActiveRecordQueryFilter|null $extraFilter
+     * @param $extraFilterType
+     * @return mixed|string
+     * @throws Exception
+     */
     public function join($association, $alias=null, $type=ActiveRecordQuery::JOIN_INNER, $forceNew=false, ActiveRecordQueryFilter $extraFilter = null, $extraFilterType = "AND")
     {
         if ($alias == null) {
@@ -451,7 +505,7 @@ class ActiveRecordQuery
      * @param string $column
      * @param string $direction
      */
-    public function setSort($column=null, $direction=ActiveRecordQuery::SORT_ASC)
+    public function setSort($column=null, $direction=ActiveRecordQuery::SORT_ASC): ActiveRecordQuery
     {
         $this->sorts = Array();
         if ($column) {
@@ -476,7 +530,7 @@ class ActiveRecordQuery
      * @param string $column
      * @param string $direction
      */
-    public function addSort($column=null, $direction=ActiveRecordQuery::SORT_ASC)
+    public function addSort($column=null, $direction=ActiveRecordQuery::SORT_ASC): ActiveRecordQuery
     {
         if ($column) {
             $this->sorts[$column] = $direction;
@@ -484,6 +538,9 @@ class ActiveRecordQuery
         return $this;
     }
 
+    /**
+     * @return int|string|null
+     */
     public function getSort()
     {
         if (count($this->sorts) == 0) {
@@ -493,7 +550,11 @@ class ActiveRecordQuery
         return $sorts[0];
     }
 
-    public function setGroup($column=null)
+    /**
+     * @param $column
+     * @return $this
+     */
+    public function setGroup($column=null): ActiveRecordQuery
     {
         $this->groups = Array();
         if ($column) {
@@ -503,7 +564,11 @@ class ActiveRecordQuery
         return $this;
     }
 
-    public function addGroup($column)
+    /**
+     * @param $column
+     * @return $this
+     */
+    public function addGroup($column): ActiveRecordQuery
     {
         if ($column) {
             $this->groups[] = $column;
@@ -512,6 +577,9 @@ class ActiveRecordQuery
         return $this;
     }
 
+    /**
+     * @return mixed|null
+     */
     public function getGroup()
     {
         if (count($this->groups) == 0) { return null;
@@ -519,12 +587,20 @@ class ActiveRecordQuery
         return $this->groups[0];
     }
 
+    /**
+     * @return array|mixed
+     */
     public function getGroups()
     {
         return $this->groups;
     }
 
-    public function setAggregate($column=null, $aggregate=null)
+    /**
+     * @param $column
+     * @param $aggregate
+     * @return $this
+     */
+    public function setAggregate($column=null, $aggregate=null): ActiveRecordQuery
     {
         $this->aggregates = Array();
         if ($column) {
@@ -534,17 +610,28 @@ class ActiveRecordQuery
         return $this;
     }
 
-    public function addAggregate($column, $aggregate)
+    /**
+     * @param $column
+     * @param $aggregate
+     * @return $this
+     */
+    public function addAggregate($column, $aggregate): ActiveRecordQuery
     {
         $this->aggregates[] = Array("values"=>$column, "aggregate"=>$aggregate);
         return $this;
     }
 
+    /**
+     * @return array|mixed
+     */
     public function getAggregates()
     {
         return $this->aggregates;
     }
 
+    /**
+     * @return mixed|null
+     */
     public function getSortDirection()
     {
         if (count($this->sorts) == 0) {
@@ -554,12 +641,19 @@ class ActiveRecordQuery
         return $sorts[0];
     }
 
+    /**
+     * @return array|mixed
+     */
     public function getSorts()
     {
         return $this->sorts;
     }
 
-    protected function translateSorts()
+    /**
+     * @return array
+     * @throws Exception
+     */
+    protected function translateSorts(): array
     {
         $orderTranslations = Array();
         foreach ($this->sorts as $col => $direction) {
@@ -575,7 +669,11 @@ class ActiveRecordQuery
         return $order;
     }
 
-    protected function translateGroups()
+    /**
+     * @return array
+     * @throws Exception
+     */
+    protected function translateGroups(): array
     {
         $groupTranslations = Array();
         foreach ($this->groups as $group) {
@@ -586,7 +684,11 @@ class ActiveRecordQuery
         return $groupTranslations;
     }
 
-    protected function translateAggregates()
+    /**
+     * @return array
+     * @throws Exception
+     */
+    protected function translateAggregates(): array
     {
         $aggregateTranslations = Array();
         foreach ($this->aggregates as $index => $aggregateInfo) {
@@ -618,28 +720,48 @@ class ActiveRecordQuery
         return $aggregateTranslations;
     }
 
-    public function setLimit($limit)
+    /**
+     * @param $limit
+     * @return $this
+     */
+    public function setLimit($limit): ActiveRecordQuery
     {
         $this->limit = intval($limit);
         return $this;
     }
 
+    /**
+     * @return int|mixed
+     */
     public function getLimit()
     {
         return $this->limit;
     }
 
-    public function setOffset($offset)
+    /**
+     * @param $offset
+     * @return $this
+     */
+    public function setOffset($offset): ActiveRecordQuery
     {
         $this->offset = intval($offset);
         return $this;
     }
 
+    /**
+     * @return int|mixed
+     */
     public function getOffset()
     {
         return $this->offset;
     }
 
+    /**
+     * @param $name
+     * @param $args
+     * @return $this
+     * @throws Exception
+     */
     public function __call($name, $args)
     {
         if (method_exists($this, "get".ucfirst($name))) {
@@ -649,48 +771,100 @@ class ActiveRecordQuery
         }
     }
 
-    public function getFilterBy($col, $value, $operator="=")
+    /**
+     * @param $col
+     * @param $value
+     * @param $operator
+     * @return ActiveRecordQueryFilterColumnValue
+     * @throws Exception
+     */
+    public function getFilterBy($col, $value, $operator="="): ActiveRecordQueryFilterColumnValue
     {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValue($this, $col, $value, $operator);
     }
 
-    public function getFilterByOr()
+    /**
+     * @return ActiveRecordQueryFilterOr
+     */
+    public function getFilterByOr(): ActiveRecordQueryFilterOr
     {
         $args = func_get_args();
         return new ActiveRecordQueryFilterOr($args);
     }
 
-    public function getFilterByAnd()
+    /**
+     * @return ActiveRecordQueryFilterAnd
+     */
+    public function getFilterByAnd(): ActiveRecordQueryFilterAnd
     {
         $args = func_get_args();
         return new ActiveRecordQueryFilterAnd($args);
     }
 
-    public function getFilterBySubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="=")
+    /**
+     * @param $col
+     * @param ActiveRecordSubQuery $subquery
+     * @param $subqueryCol
+     * @param $aggregate
+     * @param $operator
+     * @return ActiveRecordQueryFilterColumnValueSubquery
+     * @throws Exception
+     */
+    public function getFilterBySubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="="): ActiveRecordQueryFilterColumnValueSubquery
     {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValueSubquery($this, $col, $subquery, $subqueryCol, $aggregate, $operator);
     }
 
-    public function getFilterBySubQueryMatch($value, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="=")
+    /**
+     * @param $value
+     * @param ActiveRecordSubQuery $subquery
+     * @param $subqueryCol
+     * @param $aggregate
+     * @param $operator
+     * @return ActiveRecordQueryFilterColumnValueSubqueryMatch
+     */
+    public function getFilterBySubQueryMatch($value, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="="): ActiveRecordQueryFilterColumnValueSubqueryMatch
     {
         return new ActiveRecordQueryFilterColumnValueSubqueryMatch($this, $value, $subquery, $subqueryCol, $aggregate, $operator);
     }
 
-    public function getFilterByIn($col, array $value, $operator="IN")
+    /**
+     * @param $col
+     * @param array $value
+     * @param $operator
+     * @return ActiveRecordQueryFilterColumnValueIn
+     * @throws Exception
+     */
+    public function getFilterByIn($col, array $value, $operator="IN"): ActiveRecordQueryFilterColumnValueIn
     {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValueIn($this, $col, $value, $operator);
     }
 
-    public function getFilterByInSubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $operator="IN")
+    /**
+     * @param $col
+     * @param ActiveRecordSubQuery $subquery
+     * @param $subqueryCol
+     * @param $operator
+     * @return ActiveRecordQueryFilterColumnValueInSubquery
+     * @throws Exception
+     */
+    public function getFilterByInSubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $operator="IN"): ActiveRecordQueryFilterColumnValueInSubquery
     {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValueInSubquery($this, $col, $subquery, $subqueryCol, $operator);
     }
 
-    public function getFilterByMatch($col1, $col2, $operator="=")
+    /**
+     * @param $col1
+     * @param $col2
+     * @param $operator
+     * @return ActiveRecordQueryFilterColumnMatch
+     * @throws Exception
+     */
+    public function getFilterByMatch($col1, $col2, $operator="="): ActiveRecordQueryFilterColumnMatch
     {
         $col1 = $this->translateColumnName($col1);
         $col2 = $this->translateColumnName($col2);
@@ -698,17 +872,30 @@ class ActiveRecordQuery
         return new ActiveRecordQueryFilterColumnMatch($this, $col1, $col2, $operator);
     }
 
-    public function addFilter(ActiveRecordQueryFilter $filter)
+    /**
+     * @param ActiveRecordQueryFilter $filter
+     * @return $this
+     */
+    public function addFilter(ActiveRecordQueryFilter $filter): ActiveRecordQuery
     {
         $this->filters[] = $filter;
         return $this;
     }
 
-    public function addSubQuery($model)
+    /**
+     * @param $model
+     * @return ActiveRecordSubQuery
+     * @throws Exception
+     */
+    public function addSubQuery($model): ActiveRecordSubQuery
     {
         return new ActiveRecordSubQuery($this, $model);
     }
 
+    /**
+     * @return int|mixed
+     * @throws Exception
+     */
     public function get_count()
     {
         $order = $this->translateSorts(); //This may result in more joined tables and hence a different count
@@ -726,7 +913,12 @@ class ActiveRecordQuery
         return $count;
     }
 
-    protected function buildNormalSelect($aliasColumns=null)
+    /**
+     * @param $aliasColumns
+     * @return array
+     * @throws Exception
+     */
+    protected function buildNormalSelect($aliasColumns=null): array
     {
         if (!$aliasColumns) { $aliasColumns = $this->getAliasColumns();
         }
@@ -747,7 +939,11 @@ class ActiveRecordQuery
         return $select;
     }
 
-    protected function buildAggregateSelect()
+    /**
+     * @return array
+     * @throws Exception
+     */
+    protected function buildAggregateSelect(): array
     {
         $select = Array();
 
@@ -762,7 +958,10 @@ class ActiveRecordQuery
         return $select;
     }
 
-    protected function buildJoins()
+    /**
+     * @return array
+     */
+    protected function buildJoins(): array
     {
         $joins = Array();
 
@@ -806,7 +1005,12 @@ class ActiveRecordQuery
         return $result;
     }
 
-    protected function executeGrouped($groups)
+    /**
+     * @param $groups
+     * @return array
+     * @throws Exception
+     */
+    protected function executeGrouped($groups): array
     {
         $order = $this->translateSorts();
         $select = $this->buildAggregateSelect();
@@ -819,7 +1023,12 @@ class ActiveRecordQuery
         return $result;
     }
 
-    protected function executeNormal($dontHydrate)
+    /**
+     * @param $dontHydrate
+     * @return array
+     * @throws Exception
+     */
+    protected function executeNormal($dontHydrate): array
     {
         $order = $this->translateSorts();
         if($this->fullJoin) {
@@ -895,7 +1104,12 @@ class ActiveRecordQuery
         return $result;
     }
 
-    protected function addJoinData($alias, &$aliasElements)
+    /**
+     * @param $alias
+     * @param $aliasElements
+     * @return bool
+     */
+    protected function addJoinData($alias, &$aliasElements): bool
     {
         if (!array_key_exists($alias, $this->joins)) { return false;
         }
@@ -942,7 +1156,16 @@ class ActiveRecordQuery
         return true;
     }
 
-    protected function getSql($select, $group=null, $order=null, $limit=null, $offset=null)
+    /**
+     * @param $select
+     * @param $group
+     * @param $order
+     * @param $limit
+     * @param $offset
+     * @return string
+     * @throws Exception
+     */
+    protected function getSql($select, $group=null, $order=null, $limit=null, $offset=null): string
     {
         $alias = $this->mainAlias;
         $table = $this->obj->getTableName();
@@ -979,6 +1202,10 @@ class ActiveRecordQuery
         return $sql;
     }
 
+    /**
+     * @return string
+     * @throws Exception
+     */
     public function __toString()
     {
         $groups = $this->translateGroups();
@@ -993,7 +1220,12 @@ class ActiveRecordQuery
         return $this->getSql($select, $groups, $order, $this->limit, $this->offset);
     }
 
-    public function getSqlForField($field)
+    /**
+     * @param $field
+     * @return string
+     * @throws Exception
+     */
+    public function getSqlForField($field): string
     {
         $groups = $this->translateGroups();
         $order = $this->translateSorts();
@@ -1001,7 +1233,16 @@ class ActiveRecordQuery
         return $this->getSql($select, $groups, $order, $this->limit, $this->offset);
     }
 
-    protected function executeQuery($select, $group=null, $order=null, $limit=null, $offset=null)
+    /**
+     * @param $select
+     * @param $group
+     * @param $order
+     * @param $limit
+     * @param $offset
+     * @return \PDOStatement
+     * @throws Exception
+     */
+    protected function executeQuery($select, $group=null, $order=null, $limit=null, $offset=null): \PDOStatement
     {
         $sql = $this->getSql($select, $group, $order, $limit, $offset);
         $db = Database::connect($this->obj->getDatabaseName());
@@ -1022,6 +1263,12 @@ class ActiveRecordQuery
         return $result;
     }
 
+    /**
+     * @param $model
+     * @param $fieldMap
+     * @return mixed
+     * @throws Exception
+     */
     public function doInsertFromSelect($model, $fieldMap)
     {
         $group = $this->translateGroups();
@@ -1050,6 +1297,11 @@ class ActiveRecordQuery
         return $result;
     }
 
+    /**
+     * @param $fieldMap
+     * @return mixed
+     * @throws Exception
+     */
     public function doUpdateFromSelect($fieldMap)
     {
         $group = $this->translateGroups();
@@ -1080,6 +1332,11 @@ class ActiveRecordQuery
         return $result;
     }
 
+    /**
+     * @param $alias
+     * @return mixed
+     * @throws Exception
+     */
     public function doDestroyFromSelect($alias = null)
     {
         if ($alias==null) { $alias = $this->getMainAlias();
@@ -1096,41 +1353,6 @@ class ActiveRecordQuery
         $sql = "DELETE $alias.".preg_replace("/^SELECT /", "", $selectSql);
 
         $result = $this->obj->getDatabaseConnection()->query($sql);
-        return $result;
-    }
-}
-
-class ActiveRecordSubQuery extends ActiveRecordQuery
-{
-
-    protected $outerQuery;
-
-    public function __construct(ActiveRecordQuery $outerQuery, $model)
-    {
-        $this->outerQuery = $outerQuery;
-        parent::__construct($model);
-    }
-
-    public function createAlias($modelName)
-    {
-        return $this->outerQuery->createAlias($modelName);
-    }
-
-    public function hasAlias($alias)
-    {
-        return $this->outerQuery->hasAlias($alias);
-    }
-
-    public function getAlias($alias)
-    {
-        return $this->outerQuery->getAlias($alias);
-    }
-
-    public function getJoinedAliases($fromAlias = null, $joinType = null)
-    {
-        $local = parent::getJoinedAliases($fromAlias, $joinType);
-        $outer = $this->outerQuery->getJoinedAliases($fromAlias, $joinType);
-        $result = array_merge($outer, $local);
         return $result;
     }
 }
