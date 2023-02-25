@@ -93,9 +93,11 @@ class ActiveRecordDatabase
         case 'dblib':
             $dbConfig['dsn'] = 'self::$type.":host=".self::$host.(self::$port?":".self::$port:"").";dbname=".self::$db' . $charset;
             break;
+        case 'sqlite':
+            $dbConfig['dsn'] = 'self::$type.":".self::$db';
+            break;
         default:
             throw new \Exception("Unknown database type {$dbConfig['type']}");
-                break;
         }
         return $dbConfig;
     }

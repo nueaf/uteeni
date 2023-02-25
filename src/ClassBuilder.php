@@ -23,7 +23,7 @@ class ClassBuilder
     {
         $this->tableName = $tableName;
         $this->database  = strtoupper($database);
-        $this->conn = Database::connect($database);
+        $this->conn = Database::get($database);
 
         $this->dbConfig = ActiveRecordDatabase::getConfig();
         $this->repository = $this->dbConfig[$this->database."Database"]['repository'] ?: "../models";

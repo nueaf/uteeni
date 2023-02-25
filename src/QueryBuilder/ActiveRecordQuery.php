@@ -1217,7 +1217,7 @@ class ActiveRecordQuery
             $options["WHERE"] .= " GROUP BY " . implode(",", $group);
         }
 
-        $db = Database::connect($this->obj->getDatabaseName());
+        $db = Database::get($this->obj->getDatabaseName());
         $sql = SQLSyntaxor::getSelectSQL($options, $db->getAttribute(PDO::ATTR_DRIVER_NAME));
 
         return $sql;
@@ -1266,7 +1266,7 @@ class ActiveRecordQuery
     protected function executeQuery($select, $group = null, $order = null, $limit = null, $offset = null): \PDOStatement
     {
         $sql = $this->getSql($select, $group, $order, $limit, $offset);
-        $db = Database::connect($this->obj->getDatabaseName());
+        $db = Database::get($this->obj->getDatabaseName());
 
         $start = microtime(true);
         $result = $db->query($sql);

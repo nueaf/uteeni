@@ -7,12 +7,13 @@ class SqlSyntaxor
 
     static function getSelectSQL(array $options = [], string $driver = "mysql"): string
     {
-        $driver = $driver ? $driver : "mysql";
+        $driver = $driver ?: "mysql";
         $options['SELECT'] = (isset($options['SELECT']) && $options['SELECT']) ? $options['SELECT'] : '*';
         if (!isset($options["TABLE"])) {
             throw new \Exception("Table option is required");
         }
         switch (strtoupper($driver)) {
+        case 'SQLITE';
         case 'MYSQL':
             $sql = "SELECT [+SELECT+] FROM [+TABLE+] [+JOINS+] [+WHERE+] [+ORDERFIELD+] [+ORDERTYPE+] [+LIMIT+]";
             foreach ($options as $key => $option) {

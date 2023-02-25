@@ -76,20 +76,9 @@ class ActiveRecord
      * @param  string $table
      * @return string The expected class name
      */
-    public static function getClassnameFromTablename($table, $database = null)
+    public static function getClassnameFromTablename(string $table, string $database = null): string
     {
-        $table = ucfirst(strtolower($table));
-        if (!$database) {
-            $instance = new $table();
-            $database = $instance->database . "Database";
-        }
-        if (!ActiveRecordDatabase::$dbConfig) {
-            ActiveRecordDatabase::load($database);
-        }
-        $dbConfig = ActiveRecordDatabase::getConfig();
-        $dbConfig = $dbConfig[$database];
-        $func = fn(string $c) => strtoupper($c[1]);
-        return $dbConfig['prefix'] . preg_replace_callback('/_([a-z])/', $func, $table) . $dbConfig['suffix'];
+        return $table;
     }
 
     /**
@@ -257,7 +246,7 @@ class ActiveRecord
      */
     public function getDatabaseConnection()
     {
-        return Database::connect($this->getDatabaseName());
+        return Database::get($this->getDatabaseName());
     }
 
     /**
@@ -598,7 +587,7 @@ class ActiveRecord
         case 'timestamp':
         case 'date':
             if (strtolower($value) != "now()" && !preg_match("/^to_date\(/i", $value)) {
-                $db = Database::connect($this->database);
+                $db = Database::get($this->database);
                 $value = ($value === "" && $this->meta[$name]['required'] === false) ? "NULL" : $db->quote($value);
             }
             break;
@@ -609,7 +598,7 @@ class ActiveRecord
             if (array_key_exists("sprintf", $this->meta[$name]) && $this->meta[$name]['sprintf']) {
                 $value = sprintf($this->meta[$name]['sprintf'], $value);
             }
-            $db = Database::connect($this->database);
+            $db = Database::get($this->database);
             $value = $db->quote($value);
             break;
         case 'integer':
@@ -810,14 +799,14 @@ class ActiveRecord
     {
         $optionsArray = array("TABLE" => $this->table_name);
 
-        if (isset($this->_cache) && $this->_cache) {
-            $cKey = $this->cache_prepend . ':' . $this->table_name . ':' . sha1(serialize(func_get_args()));
-            $cvalue = MemCache::get($cKey);
-            if ($cvalue) {
-                error_log('GOT IN CACHE: ' . $this->table_name . ' = ' . $cKey);
-                return unserialize($cvalue);
-            }
-        }
+//        if (isset($this->_cache) && $this->_cache) {
+//            $cKey = $this->cache_prepend . ':' . $this->table_name . ':' . sha1(serialize(func_get_args()));
+//            $cvalue = MemCache::get($cKey);
+//            if ($cvalue) {
+//                error_log('GOT IN CACHE: ' . $this->table_name . ' = ' . $cKey);
+//                return unserialize($cvalue);
+//            }
+//        }
 
 
         //Where clause
@@ -876,17 +865,17 @@ class ActiveRecord
                 $arr[] = $row;
             }
         }
-        if ($this->_cache) {
-            MemCache::set($cKey, serialize($arr));
-            $cKeys = MemCache::get($this->cache_prepend . ':list:' . $this->tablename);
-            if ($cKeys) {
-                $all_cache_keys = unserialize($cKeys);
-            } else {
-                $all_cache_keys = array();
-            }
-            $all_cache_keys[] = $cKey;
-            MemCache::set($this->cache_prepend . ':list:' . $this->tablename, serialize($all_cache_keys));
-        }
+//        if ($this->_cache) {
+//            MemCache::set($cKey, serialize($arr));
+//            $cKeys = MemCache::get($this->cache_prepend . ':list:' . $this->tablename);
+//            if ($cKeys) {
+//                $all_cache_keys = unserialize($cKeys);
+//            } else {
+//                $all_cache_keys = array();
+//            }
+//            $all_cache_keys[] = $cKey;
+//            MemCache::set($this->cache_prepend . ':list:' . $this->tablename, serialize($all_cache_keys));
+//        }
         return $arr;
     }
 
@@ -929,7 +918,7 @@ class ActiveRecord
             throw new Exception("Only Select statements are allowed in find_by_sql!");
         }
 
-        $db = Database::connect($this->database);
+        $db = Database::get($this->database);
         $result = $this->query($sql, $db);
         if (!$result) {
             $error = $db->errorInfo();
@@ -1301,7 +1290,7 @@ class ActiveRecord
             "FIELDS" => $fields,
             "VALUES" => $values
         );
-        $db = Database::connect($this->database);
+        $db = Database::get($this->database);
         $sql = SqlSyntaxor::getCreateSQL($optionsArray, $this->getDatabaseDriver());
         $result = $this->query($sql, $db);
 
@@ -1325,7 +1314,7 @@ class ActiveRecord
         }
         if ($pri) {
             if ($this->$pri === null) {
-                $db = Database::connect($this->database);
+                $db = Database::get($this->database);
                 $this->$pri = $this->getLastInsertID($db);
             }
             $this->find($this->$pri);
@@ -1389,7 +1378,7 @@ class ActiveRecord
             }
             $optionsArray = array("TABLE" => $this->table_name, "WHERE" => $where, "VALUES" => $values);
             $sql = SqlSyntaxor::getUpdateSQL($optionsArray, $this->getDatabaseDriver());
-            $db = Database::connect($this->database);
+            $db = Database::get($this->database);
             $result = $this->query($sql, $db);
             if (!$result) {
                 throw new Exception(activerecord . print_r($db->errorInfo(), 1) . $sql . "\n");
@@ -1461,7 +1450,7 @@ class ActiveRecord
             "WHERE" => $where
         );
         $sql = SqlSyntaxor::getDestroySQL($optionsArray, $this->getDatabaseDriver());
-        $db = Database::connect($this->database);
+        $db = Database::get($this->database);
         $result = $this->query($sql, $db);
         if (!$result) {
             throw new Exception(activerecord . print_r($db->errorInfo(), 1) . $sql . "\n");
@@ -1554,7 +1543,7 @@ class ActiveRecord
                     /*
                      * Execute all the SQL.
                      */
-                    $db = Database::connect($this->database);
+                    $db = Database::get($this->database);
                     if (isset($unlinkSql)) {
                         $this->query($unlinkSql, $db);
                     }
@@ -1665,9 +1654,13 @@ class ActiveRecord
         }
     }
 
-    public function getDatabaseDriver()
+    /**
+     * @return string
+     * @throws Exception
+     */
+    public function getDatabaseDriver(): string
     {
-        return ActiveRecordDatabase::getDatabaseDriver($this->database);
+        return Database::get($this->database)->getAttribute(\PDO::ATTR_DRIVER_NAME);
     }
 
 }

@@ -14,8 +14,8 @@ foreach($options as $key => $option){
             echo "\n\nSELECT db.ini path: ";
             $db_ini_path = trim(fread(STDIN, 1024));
         }
-        ActiveRecordDatabase::parsedbini($db_ini_path, true);
-        $databases = array_keys(ActiveRecordDatabase::$dbconfig);
+        \Nueaf\Uteeni\ActiveRecordDatabase::parsedbini($db_ini_path, true);
+        $databases = array_keys(\Nueaf\Uteeni\ActiveRecordDatabase::$dbconfig);
         $databases = str_replace("Database", "", $databases);
         array_unshift($databases, 'CANCEL');
         break;
@@ -38,7 +38,7 @@ foreach($options as $key => $option){
 
 echo "\n";
 if (trim($table)=="*") {
-    $conn = Database::connect($database);
+    $conn = \Nueaf\Uteeni\Database::get($database);
     $q = $conn->query("SHOW TABLES;");
     $tables = array();
     while ($r = $q->fetch(PDO::FETCH_COLUMN)) {
