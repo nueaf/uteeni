@@ -16,7 +16,8 @@ use PDO;
  * @method ActiveRecordQuery filterByInSubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $operator="IN") {
  * @method ActiveRecordQuery filterByMatch($col1, $col2, $operator="=") {
  */
-class ActiveRecordQuery {
+class ActiveRecordQuery
+{
     /**
      * Indicates Ascending sorting
      */
@@ -39,21 +40,22 @@ class ActiveRecordQuery {
     protected $offset = 0;
     protected $groups = Array();
     protected $aggregates = Array();
-	protected $calculatedColumns = Array();
+    protected $calculatedColumns = Array();
     protected $joins = Array();
     protected $filters = Array();
-	protected $fullJoin = false;
+    protected $fullJoin = false;
 
     /**
      * Constructor for the query object.
      *
      * The constuctor expects to known the table or view model to select from.
      *
-     * @param string $model The name of the model class to be used as base for the query
+     * @param  string $model The name of the model class to be used as base for the query
      * @throws Exception
      * @throws Exception
      */
-    public function __construct($model) {
+    public function __construct($model)
+    {
         if (!class_exists($model)) {
             throw new Exception("Could not find class for model: $model");
         }
@@ -69,28 +71,33 @@ class ActiveRecordQuery {
         $this->setSort();
     }
 
-	public static function reverseJoin($class, $join) {
-		$trimmedJoin = trim($join, ".");
-		$remainingJoin = null;
-		if (strpos($trimmedJoin, ".")) list($firstJoin, $remainingJoin) = explode(".", $trimmedJoin, 2);
-		else $firstJoin = $trimmedJoin;
+    public static function reverseJoin($class, $join)
+    {
+        $trimmedJoin = trim($join, ".");
+        $remainingJoin = null;
+        if (strpos($trimmedJoin, ".")) { list($firstJoin, $remainingJoin) = explode(".", $trimmedJoin, 2);
+        } else { $firstJoin = $trimmedJoin;
+        }
 
-		$obj = new $class();
-		$reversed = $obj->reversedJoin($firstJoin);
+        $obj = new $class();
+        $reversed = $obj->reversedJoin($firstJoin);
 
-		$result = "";
-		if ($remainingJoin) {
-			$result = self::reverseJoin($reversed["class"], $remainingJoin) . "uteeni";
-		}
-		$result .= $reversed["assoc"];
+        $result = "";
+        if ($remainingJoin) {
+            $result = self::reverseJoin($reversed["class"], $remainingJoin) . "uteeni";
+        }
+        $result .= $reversed["assoc"];
 
-		if (substr($join,0,1)==".") $result = ".$result";
-		if (substr($join,-1,1)==".") $result = "$result.";
+        if (substr($join, 0, 1)==".") { $result = ".$result";
+        }
+        if (substr($join, -1, 1)==".") { $result = "$result.";
+        }
 
-		return $result;
-	}
+        return $result;
+    }
 
-    protected function createAlias($modelName) {
+    protected function createAlias($modelName)
+    {
         $alias_base = strtolower(preg_replace('/[a-z]/', '', $modelName));
         if ($alias_base == "") {
             $alias_base = $modelName[0];
@@ -108,14 +115,16 @@ class ActiveRecordQuery {
         return $alias;
     }
 
-    public function getMainAlias() {
+    public function getMainAlias()
+    {
         return $this->mainAlias;
     }
 
-    protected function getJoinedAliases($fromAlias=null, $joinType=null) {
-		if($joinType === null){
-			return $this->aliases;
-		}
+    protected function getJoinedAliases($fromAlias=null, $joinType=null)
+    {
+        if($joinType === null) {
+            return $this->aliases;
+        }
 
         if ($fromAlias==null) {
             $fromAlias = $this->mainAlias;
@@ -137,7 +146,8 @@ class ActiveRecordQuery {
         return $aliases;
     }
 
-    protected function getAliasColumns($alias=null, $joinType=null) {
+    protected function getAliasColumns($alias=null, $joinType=null)
+    {
         $result = Array();
         foreach ($this->getJoinedAliases($alias, $joinType) as $alias => $model) {
             $aliasColumns = Array();
@@ -150,126 +160,139 @@ class ActiveRecordQuery {
         return $result;
     }
 
-    public function hasAlias($alias) {
+    public function hasAlias($alias)
+    {
         return array_key_exists($alias, $this->aliases);
     }
 
-    public function getAlias($alias) {
-        if (!$this->hasAlias($alias)) return null;
+    public function getAlias($alias)
+    {
+        if (!$this->hasAlias($alias)) { return null;
+        }
         return $this->aliases[$alias];
     }
 
-	public function addCalculatedColumn($expression, $name, $alias=null) {
-		$tokens = Array(
-			"COLUMN"         => '([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+',
-			"ADDITION"		 => '\+',
-			"SUBTRACTION"	 => '\-',
-			"MULTIPLICATION" => '\*',
-			"DIVISION"        => '\/',
-			"PAR_START"      => '\(',
-			"PAR_END"        => '\)',
-			"FUNC_SUM"		=> 'SUM',
-			"FUNC_COUNT"	=> 'COUNT',
-			"FUNC_CONCAT"	=> 'CONCAT',
-			"FUNC_IF"		=> 'IF',
-			"COMMA"			=> ",",
-			"STR_START"		=> "\'",
-			"STR_END"		=> "\'",
-			"CHAR"			=> "(.[^'])*.",
-			"ENDLINE"        => '$',
-			"EQUAL"			=> "=",
-			"LT"			=> "<", 
-			"GT"			=> ">", 
-			"DIFF1"			=> "<>",
-			"DIFF2"			=> "!=",
-			"FUNC_INET_NTOA"=> "INET_NTOA",
-			"FUNC_INET_ATON"=> "INET_ATON",
-		);
+    public function addCalculatedColumn($expression, $name, $alias=null)
+    {
+        $tokens = Array(
+        "COLUMN"         => '([a-zA-Z0-9_]+\.)*[a-zA-Z0-9_]+',
+        "ADDITION"         => '\+',
+        "SUBTRACTION"     => '\-',
+        "MULTIPLICATION" => '\*',
+        "DIVISION"        => '\/',
+        "PAR_START"      => '\(',
+        "PAR_END"        => '\)',
+        "FUNC_SUM"        => 'SUM',
+        "FUNC_COUNT"    => 'COUNT',
+        "FUNC_CONCAT"    => 'CONCAT',
+        "FUNC_IF"        => 'IF',
+        "COMMA"            => ",",
+        "STR_START"        => "\'",
+        "STR_END"        => "\'",
+        "CHAR"            => "(.[^'])*.",
+        "ENDLINE"        => '$',
+        "EQUAL"            => "=",
+        "LT"            => "<", 
+        "GT"            => ">", 
+        "DIFF1"            => "<>",
+        "DIFF2"            => "!=",
+        "FUNC_INET_NTOA"=> "INET_NTOA",
+        "FUNC_INET_ATON"=> "INET_ATON",
+        );
 
-		$expression_map = Array(
-			"FULL_EXPRESSION" => Array("EXPRESSION,ENDLINE"),
-			"EXPRESSION_NO_COMP" => Array("PAR_START,EXPRESSION,PAR_END","CALCULATION","FUNC,PAR_START,EXPRESSIONS,PAR_END","STRING","COLUMN"),
-			"EXPRESSION"      => Array("COMPARISION","EXPRESSION_NO_COMP"),
-			"COMPARISION"	  => Array("EXPRESSION_NO_COMP,COMP_OPERATOR,EXPRESSION_NO_COMP"),
-			"EXPRESSIONS"	  => Array("EXPRESSION,COMMA,EXPRESSIONS", "EXPRESSION"),
-			"CALCULATION"     => Array("COLUMN,MATH,EXPRESSION"),
-			"MATH"            => Array("ADDITION","SUBTRACTION","MULTIPLICATION","DIVISION"),
-			//"AGGR_FUNC"		  => Array("FUNC_SUM", "FUNC_COUNT"), //FIXME support for group by statements
-			"FUNC"			  => Array("FUNC_CONCAT", "FUNC_IF", "FUNC_INET_NTOA", "FUNC_INET_ATON"),
-			"STRING"		  => Array("STR_START,CHAR,STR_END"),
-			"COMP_OPERATOR"	  => Array("EQUAL", "LT", "GT", "DIFF1", "DIFF2")
-		);
+        $expression_map = Array(
+        "FULL_EXPRESSION" => Array("EXPRESSION,ENDLINE"),
+        "EXPRESSION_NO_COMP" => Array("PAR_START,EXPRESSION,PAR_END","CALCULATION","FUNC,PAR_START,EXPRESSIONS,PAR_END","STRING","COLUMN"),
+        "EXPRESSION"      => Array("COMPARISION","EXPRESSION_NO_COMP"),
+        "COMPARISION"      => Array("EXPRESSION_NO_COMP,COMP_OPERATOR,EXPRESSION_NO_COMP"),
+        "EXPRESSIONS"      => Array("EXPRESSION,COMMA,EXPRESSIONS", "EXPRESSION"),
+        "CALCULATION"     => Array("COLUMN,MATH,EXPRESSION"),
+        "MATH"            => Array("ADDITION","SUBTRACTION","MULTIPLICATION","DIVISION"),
+        //"AGGR_FUNC"          => Array("FUNC_SUM", "FUNC_COUNT"), //FIXME support for group by statements
+        "FUNC"              => Array("FUNC_CONCAT", "FUNC_IF", "FUNC_INET_NTOA", "FUNC_INET_ATON"),
+        "STRING"          => Array("STR_START,CHAR,STR_END"),
+        "COMP_OPERATOR"      => Array("EQUAL", "LT", "GT", "DIFF1", "DIFF2")
+        );
 
-		if (!function_exists("lex")) {
-			function lex($expectation,$string, &$tokens, &$expression_map, $extra=null, $depth=0, $callMap=Array()) {
-				//Circular bailout
-				if (array_key_exists($expectation,$callMap) && $callMap[$expectation]==strlen($string)) return false;
-				$callMap[$expectation]=strlen($string);
+        if (!function_exists("lex")) {
+            function lex($expectation,$string, &$tokens, &$expression_map, $extra=null, $depth=0, $callMap=Array())
+            {
+                //Circular bailout
+                if (array_key_exists($expectation, $callMap) && $callMap[$expectation]==strlen($string)) { return false;
+                }
+                $callMap[$expectation]=strlen($string);
 
-				if (array_key_exists($expectation, $tokens)) {
-					//Simple tokens by regex ;)
-					$regex = $tokens[$expectation];
-					$matches = Array();
-					preg_match("/^$regex/",$string,$matches);
-					if (count($matches)==0) return false;
-					$match = $matches[0];
-					return Array("type"=>$expectation,"match"=>$match);
-				} else if (array_key_exists($expectation, $expression_map)) {
-					//Language constructs
-					$sub_map = $expression_map[$expectation];
-					foreach ($sub_map as $items) {
-						$matches = Array();
-						$match = "";
-						$items = explode(",",$items);
-						foreach ($items as $item) {
-							$data = lex($item, substr($string,strlen($match)), $tokens, $expression_map, $extra, $depth+1, $callMap);
-							if ($data===false) break;
-							$matches[] = $data;
-							$match .= $data["match"];
-						}
-						if (count($matches)!=count($items)) continue;
-						return Array("matches"=>$matches,"match"=>$match,"type"=>$expectation);
-					}
-					return false;
-				} else {
-					throw New Exception("Unknown expected type: $expectation");
-				}
-			}
-		}
+                if (array_key_exists($expectation, $tokens)) {
+                    //Simple tokens by regex ;)
+                    $regex = $tokens[$expectation];
+                    $matches = Array();
+                    preg_match("/^$regex/", $string, $matches);
+                    if (count($matches)==0) { return false;
+                    }
+                    $match = $matches[0];
+                    return Array("type"=>$expectation,"match"=>$match);
+                } else if (array_key_exists($expectation, $expression_map)) {
+                    //Language constructs
+                    $sub_map = $expression_map[$expectation];
+                    foreach ($sub_map as $items) {
+                        $matches = Array();
+                        $match = "";
+                        $items = explode(",", $items);
+                        foreach ($items as $item) {
+                            $data = lex($item, substr($string, strlen($match)), $tokens, $expression_map, $extra, $depth+1, $callMap);
+                            if ($data===false) { break;
+                            }
+                            $matches[] = $data;
+                            $match .= $data["match"];
+                        }
+                        if (count($matches)!=count($items)) { continue;
+                        }
+                        return Array("matches"=>$matches,"match"=>$match,"type"=>$expectation);
+                    }
+                    return false;
+                } else {
+                    throw New Exception("Unknown expected type: $expectation");
+                }
+            }
+        }
 
-		$parsed_expression = lex("FULL_EXPRESSION", $expression, $tokens, $expression_map);
-		if ($parsed_expression===False) throw new Exception("Could not parse the expression: $expression");
+        $parsed_expression = lex("FULL_EXPRESSION", $expression, $tokens, $expression_map);
+        if ($parsed_expression===false) { throw new Exception("Could not parse the expression: $expression");
+        }
 
-		if (!function_exists("buildExpression")) {
-			function buildExpression($expression, &$extra) {
-				switch ($expression["type"]) {
-					case "COLUMN":
-						$translation = $extra['query']->translateColumnName($expression["match"], $extra['alias']);
-						$extra["columns"][] = $translation;
-						return $translation["expression"];
-						break;
-					default:
-						if(isset($expression["matches"])){
-							$str = "";
-							foreach ($expression["matches"] as $match) {
-								$str .= buildExpression($match, $extra);
-							}
-							return $str;							
-						}
-						return $expression["match"];
-				}
-			}
-		}
+        if (!function_exists("buildExpression")) {
+            function buildExpression($expression, &$extra)
+            {
+                switch ($expression["type"]) {
+                case "COLUMN":
+                    $translation = $extra['query']->translateColumnName($expression["match"], $extra['alias']);
+                    $extra["columns"][] = $translation;
+                    return $translation["expression"];
+                  break;
+                default:
+                    if(isset($expression["matches"])) {
+                        $str = "";
+                        foreach ($expression["matches"] as $match) {
+                            $str .= buildExpression($match, $extra);
+                        }
+                        return $str;                            
+                    }
+                    return $expression["match"];
+                }
+            }
+        }
 
-		if ($alias===null) $alias = $this->getMainAlias();
-		$extra = Array("query"=>$this,"alias"=>$alias,"columns"=>Array());
-		$result = buildExpression($parsed_expression, $extra);
-		$firstColumn = isset($extra["columns"][0]) ? $extra["columns"][0] : null;
+        if ($alias===null) { $alias = $this->getMainAlias();
+        }
+        $extra = Array("query"=>$this,"alias"=>$alias,"columns"=>Array());
+        $result = buildExpression($parsed_expression, $extra);
+        $firstColumn = isset($extra["columns"][0]) ? $extra["columns"][0] : null;
 
-		$this->calculatedColumns[$name] = Array("expression"=>$result, "alias"=>$alias, "column"=>$firstColumn, "name"=>$name);
-	}
+        $this->calculatedColumns[$name] = Array("expression"=>$result, "alias"=>$alias, "column"=>$firstColumn, "name"=>$name);
+    }
 
-    public function translateColumnName($column, $alias=null, $allowSelectColumns = false) {
+    public function translateColumnName($column, $alias=null, $allowSelectColumns = false)
+    {
         //If no alias is given, we need to find the alias
         if ($alias == null) {
             //Find out an alias an return the result with alias set
@@ -277,15 +300,17 @@ class ActiveRecordQuery {
                 list($firstPart, $remainder) = explode(".", $column, 2);
 
                 //See if the first part is an alias
-                if ($this->hasAlias($firstPart)) return $this->translateColumnName($remainder, $firstPart, $allowSelectColumns);
+                if ($this->hasAlias($firstPart)) { return $this->translateColumnName($remainder, $firstPart, $allowSelectColumns);
+                }
             }
 
-			if (array_key_exists($column, $this->calculatedColumns)) {
-				$result = Array("name"=>$column, "alias" => $this->calculatedColumns[$column]["column"]["alias"], "column" => $this->calculatedColumns[$column]["column"]["column"]);
-				if ($allowSelectColumns) $result["expression"]=$column;
-				else $result["expression"]=$this->calculatedColumns[$column]["expression"];
-				return $result;
-			}
+            if (array_key_exists($column, $this->calculatedColumns)) {
+                $result = Array("name"=>$column, "alias" => $this->calculatedColumns[$column]["column"]["alias"], "column" => $this->calculatedColumns[$column]["column"]["column"]);
+                if ($allowSelectColumns) { $result["expression"]=$column;
+                } else { $result["expression"]=$this->calculatedColumns[$column]["expression"];
+                }
+                return $result;
+            }
 
             //Assume it should be the alias of the base table
             return $this->translateColumnName($column, $this->mainAlias, $allowSelectColumns);
@@ -315,21 +340,22 @@ class ActiveRecordQuery {
             }
         }
 
-		$expression = "$alias.$column";
-		if ($alias==null) {
-			$expression = $column;
-		}
+        $expression = "$alias.$column";
+        if ($alias==null) {
+            $expression = $column;
+        }
 
         return Array("alias" => $alias, "column" => $column, "expression"=>$expression, "name"=>$column);
     }
 
-    public function join($association, $alias=null, $type=ActiveRecordQuery::JOIN_INNER, $forceNew=false, ActiveRecordQueryFilter $extraFilter = null, $extraFilterType = "AND") {
+    public function join($association, $alias=null, $type=ActiveRecordQuery::JOIN_INNER, $forceNew=false, ActiveRecordQueryFilter $extraFilter = null, $extraFilterType = "AND")
+    {
         if ($alias == null) {
             $alias = $this->mainAlias;
         }
 
         while (strpos($association, ".")) {
-            list($firstJoin, $association) = explode(".",$association,2);
+            list($firstJoin, $association) = explode(".", $association, 2);
             $alias = $this->join($firstJoin, $alias, $type, $forceNew);
         }
 
@@ -372,7 +398,8 @@ class ActiveRecordQuery {
         $newAlias = $this->createAlias($model);
 
         $assType = $associationInfo["ass_type"];
-        if ($assType=="belongs_to") $asstype = "has_one";
+        if ($assType=="belongs_to") { $asstype = "has_one";
+        }
 
         $this->joins[$alias][$association][] = Array(
             "type" => $type,
@@ -382,21 +409,22 @@ class ActiveRecordQuery {
             "remoteProperty" => $associationInfo["class_property"],
             "localAlias" => $alias,
             "localProperty" => $associationInfo["local_property"],
-			"extraFilter" => $extraFilter,
-			"extraFilterType" => $extraFilterType
+        "extraFilter" => $extraFilter,
+        "extraFilterType" => $extraFilterType
         );
 
         return $newAlias;
     }
 
-	/**
-	 * Will make the query eager load all joins and not just has_ones. Beware as this can potentially give you ALOT of data
-	 *
-	 * send false to turn Off again
-	 */
-	public function fullJoin($fullJoin = true){
-		$this->fullJoin = $fullJoin;
-	}
+    /**
+     * Will make the query eager load all joins and not just has_ones. Beware as this can potentially give you ALOT of data
+     *
+     * send false to turn Off again
+     */
+    public function fullJoin($fullJoin = true)
+    {
+        $this->fullJoin = $fullJoin;
+    }
 
     /**
      * Set the sorting for the query.
@@ -423,7 +451,8 @@ class ActiveRecordQuery {
      * @param string $column
      * @param string $direction
      */
-    public function setSort($column=null, $direction=ActiveRecordQuery::SORT_ASC) {
+    public function setSort($column=null, $direction=ActiveRecordQuery::SORT_ASC)
+    {
         $this->sorts = Array();
         if ($column) {
             $this->sorts[$column] = $direction;
@@ -447,21 +476,25 @@ class ActiveRecordQuery {
      * @param string $column
      * @param string $direction
      */
-    public function addSort($column=null, $direction=ActiveRecordQuery::SORT_ASC) {
+    public function addSort($column=null, $direction=ActiveRecordQuery::SORT_ASC)
+    {
         if ($column) {
             $this->sorts[$column] = $direction;
         }
         return $this;
     }
 
-    public function getSort() {
-        if (count($this->sorts) == 0)
+    public function getSort()
+    {
+        if (count($this->sorts) == 0) {
             return null;
+        }
         $sorts = array_keys($this->sorts);
         return $sorts[0];
     }
 
-    public function setGroup($column=null) {
+    public function setGroup($column=null)
+    {
         $this->groups = Array();
         if ($column) {
             $this->groups[] = $column;
@@ -470,7 +503,8 @@ class ActiveRecordQuery {
         return $this;
     }
 
-    public function addGroup($column) {
+    public function addGroup($column)
+    {
         if ($column) {
             $this->groups[] = $column;
         }
@@ -478,16 +512,20 @@ class ActiveRecordQuery {
         return $this;
     }
 
-    public function getGroup() {
-        if (count($this->groups) == 0) return null;
+    public function getGroup()
+    {
+        if (count($this->groups) == 0) { return null;
+        }
         return $this->groups[0];
     }
 
-    public function getGroups() {
+    public function getGroups()
+    {
         return $this->groups;
     }
 
-    public function setAggregate($column=null, $aggregate=null) {
+    public function setAggregate($column=null, $aggregate=null)
+    {
         $this->aggregates = Array();
         if ($column) {
             $this->aggregates[] = Array("values"=>$column, "aggregate"=>$aggregate);
@@ -496,31 +534,37 @@ class ActiveRecordQuery {
         return $this;
     }
 
-    public function addAggregate($column, $aggregate) {
-		$this->aggregates[] = Array("values"=>$column, "aggregate"=>$aggregate);
+    public function addAggregate($column, $aggregate)
+    {
+        $this->aggregates[] = Array("values"=>$column, "aggregate"=>$aggregate);
         return $this;
     }
 
-    public function getAggregates() {
+    public function getAggregates()
+    {
         return $this->aggregates;
     }
 
-    public function getSortDirection() {
-        if (count($this->sorts) == 0)
+    public function getSortDirection()
+    {
+        if (count($this->sorts) == 0) {
             return null;
+        }
         $sorts = array_values($this->sorts);
         return $sorts[0];
     }
 
-    public function getSorts() {
+    public function getSorts()
+    {
         return $this->sorts;
     }
 
-    protected function translateSorts() {
+    protected function translateSorts()
+    {
         $orderTranslations = Array();
         foreach ($this->sorts as $col => $direction) {
             $col = $this->translateColumnName($col, null, true);
-			$orderTranslations[$col["expression"]] = $direction;
+            $orderTranslations[$col["expression"]] = $direction;
         }
 
         $order = Array();
@@ -531,7 +575,8 @@ class ActiveRecordQuery {
         return $order;
     }
 
-    protected function translateGroups() {
+    protected function translateGroups()
+    {
         $groupTranslations = Array();
         foreach ($this->groups as $group) {
             $col = $this->translateColumnName($group);
@@ -541,56 +586,62 @@ class ActiveRecordQuery {
         return $groupTranslations;
     }
 
-    protected function translateAggregates() {
+    protected function translateAggregates()
+    {
         $aggregateTranslations = Array();
         foreach ($this->aggregates as $index => $aggregateInfo) {
 
-			if($aggregateInfo["values"]){
-				$col = $this->translateColumnName($aggregateInfo["values"]);
-				$name = strtolower($aggregateInfo["aggregate"])."_".str_replace(".", "_", $aggregateInfo["values"]);
-				switch (strtoupper($aggregateInfo["aggregate"])) {
-					case "MIN_DISTINCT":
-						$aggregateTranslations[$name] = "MIN(DISTINCT {$col["expression"]}) AS $name";
-						break;
-					case "MAX_DISTINCT":
-						$aggregateTranslations[$name] = "MAX(DISTINCT {$col["expression"]}) AS $name";
-						break;
-					case "GROUP_CONCAT_DISTINCT":
-						$aggregateTranslations[$name] = "GROUP_CONCAT(DISTINCT {$col["expression"]}) AS $name";
-						break;
-					case "COUNT_DISTINCT":
-						$aggregateTranslations[$name] = "COUNT(DISTINCT {$col["expression"]}) AS $name";
-						break;
-					default:
-						$aggregateTranslations[$name] = strtoupper($aggregateInfo["aggregate"])."({$col["expression"]}) AS $name";
-				}
-			} else {
-				$aggregateTranslations["agg" . $index] = $aggregateInfo["aggregate"];
-			}
+            if($aggregateInfo["values"]) {
+                $col = $this->translateColumnName($aggregateInfo["values"]);
+                $name = strtolower($aggregateInfo["aggregate"])."_".str_replace(".", "_", $aggregateInfo["values"]);
+                switch (strtoupper($aggregateInfo["aggregate"])) {
+                case "MIN_DISTINCT":
+                        $aggregateTranslations[$name] = "MIN(DISTINCT {$col["expression"]}) AS $name";
+                    break;
+                case "MAX_DISTINCT":
+                    $aggregateTranslations[$name] = "MAX(DISTINCT {$col["expression"]}) AS $name";
+                    break;
+                case "GROUP_CONCAT_DISTINCT":
+                    $aggregateTranslations[$name] = "GROUP_CONCAT(DISTINCT {$col["expression"]}) AS $name";
+                    break;
+                case "COUNT_DISTINCT":
+                    $aggregateTranslations[$name] = "COUNT(DISTINCT {$col["expression"]}) AS $name";
+                    break;
+                default:
+                    $aggregateTranslations[$name] = strtoupper($aggregateInfo["aggregate"])."({$col["expression"]}) AS $name";
+                }
+            } else {
+                $aggregateTranslations["agg" . $index] = $aggregateInfo["aggregate"];
+            }
         }
 
         return $aggregateTranslations;
     }
 
-    public function setLimit($limit) {
+    public function setLimit($limit)
+    {
         $this->limit = intval($limit);
         return $this;
     }
 
-    public function getLimit() {
+    public function getLimit()
+    {
         return $this->limit;
     }
 
-    public function setOffset($offset) {
+    public function setOffset($offset)
+    {
         $this->offset = intval($offset);
         return $this;
     }
 
-    public function getOffset() {
+    public function getOffset()
+    {
         return $this->offset;
     }
 
-    public function __call($name, $args) {
+    public function __call($name, $args)
+    {
         if (method_exists($this, "get".ucfirst($name))) {
             return $this->addFilter(call_user_func_array(array($this, "get".ucfirst($name)), $args));
         } else {
@@ -598,57 +649,68 @@ class ActiveRecordQuery {
         }
     }
 
-    public function getFilterBy($col, $value, $operator="=") {
+    public function getFilterBy($col, $value, $operator="=")
+    {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValue($this, $col, $value, $operator);
     }
 
-    public function getFilterByOr() {
+    public function getFilterByOr()
+    {
         $args = func_get_args();
         return new ActiveRecordQueryFilterOr($args);
     }
 
-    public function getFilterByAnd() {
+    public function getFilterByAnd()
+    {
         $args = func_get_args();
         return new ActiveRecordQueryFilterAnd($args);
     }
 
-    public function getFilterBySubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="=") {
+    public function getFilterBySubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="=")
+    {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValueSubquery($this, $col, $subquery, $subqueryCol, $aggregate, $operator);
     }
 
-    public function getFilterBySubQueryMatch($value, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="=") {
+    public function getFilterBySubQueryMatch($value, ActiveRecordSubQuery $subquery, $subqueryCol, $aggregate="MAX", $operator="=")
+    {
         return new ActiveRecordQueryFilterColumnValueSubqueryMatch($this, $value, $subquery, $subqueryCol, $aggregate, $operator);
     }
 
-    public function getFilterByIn($col, array $value, $operator="IN") {
+    public function getFilterByIn($col, array $value, $operator="IN")
+    {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValueIn($this, $col, $value, $operator);
     }
 
-    public function getFilterByInSubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $operator="IN") {
+    public function getFilterByInSubQuery($col, ActiveRecordSubQuery $subquery, $subqueryCol, $operator="IN")
+    {
         $col = $this->translateColumnName($col);
         return new ActiveRecordQueryFilterColumnValueInSubquery($this, $col, $subquery, $subqueryCol, $operator);
     }
 
-    public function getFilterByMatch($col1, $col2, $operator="=") {
+    public function getFilterByMatch($col1, $col2, $operator="=")
+    {
         $col1 = $this->translateColumnName($col1);
         $col2 = $this->translateColumnName($col2);
 
         return new ActiveRecordQueryFilterColumnMatch($this, $col1, $col2, $operator);
     }
 
-    public function addFilter(ActiveRecordQueryFilter $filter) {
+    public function addFilter(ActiveRecordQueryFilter $filter)
+    {
         $this->filters[] = $filter;
         return $this;
     }
 
-    public function addSubQuery($model) {
+    public function addSubQuery($model)
+    {
         return new ActiveRecordSubQuery($this, $model);
     }
 
-    public function get_count() {
+    public function get_count()
+    {
         $order = $this->translateSorts(); //This may result in more joined tables and hence a different count
         $group = $this->translateGroups(); //This may result in more joined tables and hence a different count
         $select = Array("COUNT(1) AS cnt");
@@ -661,11 +723,13 @@ class ActiveRecordQuery {
             $count = $result->fetchColumn();
         }
 
-		return $count;
+        return $count;
     }
 
-    protected function buildNormalSelect($aliasColumns=null) {
-        if (!$aliasColumns) $aliasColumns = $this->getAliasColumns();
+    protected function buildNormalSelect($aliasColumns=null)
+    {
+        if (!$aliasColumns) { $aliasColumns = $this->getAliasColumns();
+        }
 
         $select = Array();
         foreach ($aliasColumns as $alias => $columns) {
@@ -674,38 +738,41 @@ class ActiveRecordQuery {
                 $select[$name] = "$alias AS " . $name;
             }
         }
-		foreach ($this->calculatedColumns as $name=>$calculatedColumn) {
-			if (array_key_exists($name, $select)) throw new Exception("Alias used twice in select: '$name'");
-			$select[$name] = $calculatedColumn["expression"]." AS $name";
-		}
+        foreach ($this->calculatedColumns as $name=>$calculatedColumn) {
+            if (array_key_exists($name, $select)) { throw new Exception("Alias used twice in select: '$name'");
+            }
+            $select[$name] = $calculatedColumn["expression"]." AS $name";
+        }
 
         return $select;
     }
 
-    protected function buildAggregateSelect() {
+    protected function buildAggregateSelect()
+    {
         $select = Array();
 
         foreach ($this->translateAggregates() as $name=>$selectColumn) {
             $select[$name] = $selectColumn;
         }
         foreach ($this->translateGroups() as $name=>$groupColumn) {
-            $name = str_replace(".","_",$name);
+            $name = str_replace(".", "_", $name);
             $select[$name] = $groupColumn." AS ".$name;
         }
 
         return $select;
     }
 
-    protected function buildJoins() {
+    protected function buildJoins()
+    {
         $joins = Array();
 
         foreach ($this->joins as $fromAlias => $joinAssocs) {
             foreach ($joinAssocs as $fromAssoc => $joinInfos) {
                 foreach ($joinInfos as $joinInfo) {
                     $model = $this->getAlias($joinInfo["remoteAlias"]);
-					$join = "{$joinInfo["type"]} JOIN {$joinInfo["remoteTable"]} AS {$joinInfo["remoteAlias"]} ON {$joinInfo["remoteAlias"]}.{$joinInfo["remoteProperty"]}={$joinInfo["localAlias"]}.{$joinInfo["localProperty"]}";
-					$join .= $joinInfo["extraFilter"] ? " {$joinInfo['extraFilterType']} {$joinInfo['extraFilter']}" : "";
-					
+                    $join = "{$joinInfo["type"]} JOIN {$joinInfo["remoteTable"]} AS {$joinInfo["remoteAlias"]} ON {$joinInfo["remoteAlias"]}.{$joinInfo["remoteProperty"]}={$joinInfo["localAlias"]}.{$joinInfo["localProperty"]}";
+                    $join .= $joinInfo["extraFilter"] ? " {$joinInfo['extraFilterType']} {$joinInfo['extraFilter']}" : "";
+                    
                     $joins[] = $join;
                 }
             }
@@ -718,10 +785,11 @@ class ActiveRecordQuery {
      * Only has_one associations are linked by this method, as has_many may be
      * halfed by a limit elsewhere in the query.
      *
-     * @param string $indexBy The name of the field or property to index the result by
+     * @param  string $indexBy The name of the field or property to index the result by
      * @return array
      */
-    public function execute($indexBy=null, $dontHydrate = false) {
+    public function execute($indexBy=null, $dontHydrate = false): array
+    {
         $groups = $this->translateGroups();
         if (count($groups)) {
             $result = $this->executeGrouped($groups);
@@ -731,13 +799,15 @@ class ActiveRecordQuery {
 
         if ($indexBy) {
             $keys = array_map(create_function('$item', 'return is_array($item)?$item["'.$indexBy.'"]:$item->'.$indexBy.';'), $result);
-            if (count($keys)) $result = array_combine($keys, $result);
+            if (count($keys)) { $result = array_combine($keys, $result);
+            }
         }
 
         return $result;
     }
 
-    protected function executeGrouped($groups) {
+    protected function executeGrouped($groups)
+    {
         $order = $this->translateSorts();
         $select = $this->buildAggregateSelect();
         $handle = $this->executeQuery($select, $groups, $order, $this->limit, $this->offset);
@@ -749,45 +819,46 @@ class ActiveRecordQuery {
         return $result;
     }
 
-    protected function executeNormal($dontHydrate) {
+    protected function executeNormal($dontHydrate)
+    {
         $order = $this->translateSorts();
-		if($this->fullJoin){
-			$aliasColumns = $this->getAliasColumns($this->mainAlias);
-		}else{
-			$aliasColumns = $this->getAliasColumns($this->mainAlias, "has_one");
-		}
+        if($this->fullJoin) {
+            $aliasColumns = $this->getAliasColumns($this->mainAlias);
+        }else{
+            $aliasColumns = $this->getAliasColumns($this->mainAlias, "has_one");
+        }
         $select = $this->buildNormalSelect($aliasColumns);
-		
+        
         $foundEntities = Array();
         foreach ($aliasColumns as $alias => $columns) {
             $foundEntities[$this->getAlias($alias)] = Array();
         }
 
-		$calcualtedColumns = Array();
-		foreach ($this->calculatedColumns as $calcualtedColumn) {
-			if (!array_key_exists($calcualtedColumn["alias"], $calcualtedColumns)) {
-				$calcualtedColumns[$calcualtedColumn["alias"]] = Array();
-			}
-			$calcualtedColumns[$calcualtedColumn["alias"]][] = $calcualtedColumn["name"];
-		}
+        $calcualtedColumns = Array();
+        foreach ($this->calculatedColumns as $calcualtedColumn) {
+            if (!array_key_exists($calcualtedColumn["alias"], $calcualtedColumns)) {
+                $calcualtedColumns[$calcualtedColumn["alias"]] = Array();
+            }
+            $calcualtedColumns[$calcualtedColumn["alias"]][] = $calcualtedColumn["name"];
+        }
 
         $result = Array();
         $handle = $this->executeQuery($select, null, $order, $this->limit, $this->offset);
         while (($row = $handle->fetch(PDO::FETCH_ASSOC))) {
-	
+    
             $aliasElements = Array();
-			
+            
             foreach ($aliasColumns as $alias => $columns) {
                 $model = $this->getAlias($alias);
                 $fields = Array();
                 foreach ($columns as $realName => $aliasColumn) {
                     $fields[$realName] = $row[str_replace(".", "_", $aliasColumn)];
                 }
-				if (array_key_exists($alias, $calcualtedColumns)) {
-					foreach ($calcualtedColumns[$alias] as $calcualtedColumn) {
-						$fields[$calcualtedColumn] = $row[$calcualtedColumn];
-					}
-				}
+                if (array_key_exists($alias, $calcualtedColumns)) {
+                    foreach ($calcualtedColumns[$alias] as $calcualtedColumn) {
+                        $fields[$calcualtedColumn] = $row[$calcualtedColumn];
+                    }
+                }
 
                 $tmp = new $model();
 
@@ -799,11 +870,11 @@ class ActiveRecordQuery {
                 if (array_key_exists($priHash, $foundEntities[$model])) {
                     $tmp = $foundEntities[$model][$priHash];
                 } else {
-					if($dontHydrate) {
-						$tmp = (object)$fields; 
-					}else{
-						$tmp->hydrate($fields);
-					}
+                    if($dontHydrate) {
+                        $tmp = (object)$fields; 
+                    }else{
+                        $tmp->hydrate($fields);
+                    }
                     $foundEntities[$model][$priHash] = $tmp;
 
                     if ($alias == $this->mainAlias) {
@@ -812,7 +883,8 @@ class ActiveRecordQuery {
                 }
 
                 //Add the element to aliasElement if it held any values. Ignore missing left joins
-                if (count(array_filter($fields))==0) continue;
+                if (count(array_filter($fields))==0) { continue;
+                }
                 $aliasElements[$alias] = $tmp;
             }
 
@@ -823,52 +895,55 @@ class ActiveRecordQuery {
         return $result;
     }
 
-    protected function addJoinData($alias, &$aliasElements) {
-        if (!array_key_exists($alias, $this->joins)) return false;
+    protected function addJoinData($alias, &$aliasElements)
+    {
+        if (!array_key_exists($alias, $this->joins)) { return false;
+        }
 
         foreach ($this->joins[$alias] as $association=>$infos) {
             $aliases = Array();
             //Get inner joins first (better chance for them holding data ;)
             foreach ($infos as $info) {
-                if ( ( $this->fullJoin || $info["assoc_type"]=="has_one" ) && $info["type"]==self::JOIN_INNER) {
-					if($info["assoc_type"]=="has_one"){
-						$aliases[$association] = $info["remoteAlias"];
-					}  else {
-						$aliases[$association][] = $info["remoteAlias"];
-					}
+                if (( $this->fullJoin || $info["assoc_type"]=="has_one" ) && $info["type"]==self::JOIN_INNER) {
+                    if($info["assoc_type"]=="has_one") {
+                        $aliases[$association] = $info["remoteAlias"];
+                    }  else {
+                        $aliases[$association][] = $info["remoteAlias"];
+                    }
                 }
             }
             foreach ($infos as $info) {
-                if ( ( $this->fullJoin || $info["assoc_type"]=="has_one" ) && $info["type"]==self::JOIN_LEFT) {
-                    if($info["assoc_type"]=="has_one"){
-						$aliases[$association] = $info["remoteAlias"];
-					}  else {
-						$aliases[$association][] = $info["remoteAlias"];
-					}
+                if (( $this->fullJoin || $info["assoc_type"]=="has_one" ) && $info["type"]==self::JOIN_LEFT) {
+                    if($info["assoc_type"]=="has_one") {
+                        $aliases[$association] = $info["remoteAlias"];
+                    }  else {
+                        $aliases[$association][] = $info["remoteAlias"];
+                    }
                 }
             }
 
             foreach ($aliases as $association=>$referred_alias) {
-				if(is_array($referred_alias)){
-					foreach($referred_alias as $ref_alias){
-						if(isset($aliasElements[$ref_alias])){
-							$aliasElements[$alias]->{$association}[] = $aliasElements[$ref_alias];
-							$this->addJoinData($ref_alias, $aliasElements);
-						}else{
-							$aliasElements[$alias]->{$association} = array();
-						}
-					}
-				}else{
-					$aliasElements[$alias]->$association = $aliasElements[$referred_alias];
-					$this->addJoinData($referred_alias, $aliasElements);
-				}
-			}
-		}
+                if(is_array($referred_alias)) {
+                    foreach($referred_alias as $ref_alias){
+                        if(isset($aliasElements[$ref_alias])) {
+                                  $aliasElements[$alias]->{$association}[] = $aliasElements[$ref_alias];
+                                  $this->addJoinData($ref_alias, $aliasElements);
+                        }else{
+                            $aliasElements[$alias]->{$association} = array();
+                        }
+                    }
+                }else{
+                    $aliasElements[$alias]->$association = $aliasElements[$referred_alias];
+                    $this->addJoinData($referred_alias, $aliasElements);
+                }
+            }
+        }
 
         return true;
     }
 
-    protected function getSql($select, $group=null, $order=null, $limit=null, $offset=null) {
+    protected function getSql($select, $group=null, $order=null, $limit=null, $offset=null)
+    {
         $alias = $this->mainAlias;
         $table = $this->obj->getTableName();
         $table = "$table AS $alias";
@@ -893,17 +968,19 @@ class ActiveRecordQuery {
             $options["WHERE"] = implode(" AND ", $this->filters);
         }
         if (count($group)) {
-            if (!array_key_exists("WHERE", $options)) $options["WHERE"]="1";
+            if (!array_key_exists("WHERE", $options)) { $options["WHERE"]="1";
+            }
             $options["WHERE"] .= " GROUP BY ".implode(",", $group);
         }
 
         $db = Database::connect($this->obj->getDatabaseName());
         $sql = SQLSyntaxor::getSelectSQL($options, $db->getAttribute(PDO::ATTR_DRIVER_NAME));
-		
+        
         return $sql;
     }
 
-    public function __toString() {
+    public function __toString()
+    {
         $groups = $this->translateGroups();
         $order = $this->translateSorts();
         if (count($groups)) {
@@ -916,14 +993,16 @@ class ActiveRecordQuery {
         return $this->getSql($select, $groups, $order, $this->limit, $this->offset);
     }
 
-    public function getSqlForField($field) {
+    public function getSqlForField($field)
+    {
         $groups = $this->translateGroups();
         $order = $this->translateSorts();
         $select = array($field);
         return $this->getSql($select, $groups, $order, $this->limit, $this->offset);
     }
 
-    protected function executeQuery($select, $group=null, $order=null, $limit=null, $offset=null) {
+    protected function executeQuery($select, $group=null, $order=null, $limit=null, $offset=null)
+    {
         $sql = $this->getSql($select, $group, $order, $limit, $offset);
         $db = Database::connect($this->obj->getDatabaseName());
 
@@ -932,111 +1011,123 @@ class ActiveRecordQuery {
         $end = microtime(true);
 
         if (!$result) {
-            if (isset($_SERVER['system_environment']) && $_SERVER['system_environment']=="development" && !headers_sent()) header("AR-QUERY-$start: ".($end*1000-$start*1000)." ms - ".$sql, false);
-            throw new Exception("Error executing query: $sql - ".print_r($db->errorInfo(),1));
+            if (isset($_SERVER['system_environment']) && $_SERVER['system_environment']=="development" && !headers_sent()) { header("AR-QUERY-$start: ".($end*1000-$start*1000)." ms - ".$sql, false);
+            }
+            throw new Exception("Error executing query: $sql - ".print_r($db->errorInfo(), 1));
         }
 
-        if (isset($_SERVER['system_environment']) && $_SERVER['system_environment']=="development" && !headers_sent()) header("AR-QUERY-$start: ".$result->rowCount()." rows - ".($end*1000-$start*1000)." ms - ".$sql, false);
+        if (isset($_SERVER['system_environment']) && $_SERVER['system_environment']=="development" && !headers_sent()) { header("AR-QUERY-$start: ".$result->rowCount()." rows - ".($end*1000-$start*1000)." ms - ".$sql, false);
+        }
 
         return $result;
     }
 
-	public function doInsertFromSelect($model, $fieldMap) {
-		$group = $this->translateGroups();
-		$order = $this->translateSorts();
+    public function doInsertFromSelect($model, $fieldMap)
+    {
+        $group = $this->translateGroups();
+        $order = $this->translateSorts();
 
-		$select = Array();
-		foreach ($fieldMap as $to=>$from) {
-			if ($from===null) {
-				$from="NULL";
-			} else if (strlen($from)==0 || $from[0]!="'") {
-				$from = $this->translateColumnName($from, null, true);
-				$from = $from["expression"];
-			}
-			$select[$to] = $from;
-		}
+        $select = Array();
+        foreach ($fieldMap as $to=>$from) {
+            if ($from===null) {
+                $from="NULL";
+            } else if (strlen($from)==0 || $from[0]!="'") {
+                $from = $this->translateColumnName($from, null, true);
+                $from = $from["expression"];
+            }
+            $select[$to] = $from;
+        }
 
-		$model = new $model();
+        $model = new $model();
 
-		$selectSql = $this->getSql(array_values($select), $group, $order, $this->limit, $this->offset);
-		$sql = "INSERT INTO {$model->table_name} (".implode(",",array_keys($select)).") $selectSql";
+        $selectSql = $this->getSql(array_values($select), $group, $order, $this->limit, $this->offset);
+        $sql = "INSERT INTO {$model->table_name} (".implode(",", array_keys($select)).") $selectSql";
 
-		$result = $this->obj->getDatabaseConnection()->query($sql);
-		if ($result===false) {
-			$result = $this->obj->getDatabaseConnection()->errorInfo();
-		}
-		return $result;
-	}
+        $result = $this->obj->getDatabaseConnection()->query($sql);
+        if ($result===false) {
+            $result = $this->obj->getDatabaseConnection()->errorInfo();
+        }
+        return $result;
+    }
 
-	public function doUpdateFromSelect($fieldMap) {
-		$group = $this->translateGroups();
-		$order = Array();
+    public function doUpdateFromSelect($fieldMap)
+    {
+        $group = $this->translateGroups();
+        $order = Array();
 
-		$updates = Array();
-		foreach ($fieldMap as $to=>$from) {
-			if ($from===null) {
-				$from = "NULL";
-			} else if (strlen($from)==0 || $from[0]!="'") {
-				$from = $this->translateColumnName($from, null, true);
-				$from = $from["expression"];
-			}
-			$to = $this->translateColumnName($to);
-			$to = $to["expression"];
+        $updates = Array();
+        foreach ($fieldMap as $to=>$from) {
+            if ($from===null) {
+                $from = "NULL";
+            } else if (strlen($from)==0 || $from[0]!="'") {
+                $from = $this->translateColumnName($from, null, true);
+                $from = $from["expression"];
+            }
+            $to = $this->translateColumnName($to);
+            $to = $to["expression"];
 
-			$updates[] = "$to = $from";
-		}
+            $updates[] = "$to = $from";
+        }
 
-		$selectSql = $this->getSql(Array(), $group, $order, $this->limit, $this->offset);
-		$sql = preg_replace("/^SELECT \\* FROM /", "UPDATE ", $selectSql);
-		$sql = preg_replace("/ WHERE /", " SET ".implode(", ",$updates)." WHERE ", $sql);
+        $selectSql = $this->getSql(Array(), $group, $order, $this->limit, $this->offset);
+        $sql = preg_replace("/^SELECT \\* FROM /", "UPDATE ", $selectSql);
+        $sql = preg_replace("/ WHERE /", " SET ".implode(", ", $updates)." WHERE ", $sql);
 
-		$result = $this->obj->getDatabaseConnection()->query($sql);
-		if ($result===false) {
-			$result = $this->obj->getDatabaseConnection()->errorInfo();
-		}
-		return $result;
-	}
+        $result = $this->obj->getDatabaseConnection()->query($sql);
+        if ($result===false) {
+            $result = $this->obj->getDatabaseConnection()->errorInfo();
+        }
+        return $result;
+    }
 
-	public function doDestroyFromSelect($alias = null) {
-		if ($alias==null) $alias = $this->getMainAlias();
-		if (!$this->hasAlias($alias)) {
-			$alias = $this->join($alias);
-		}
+    public function doDestroyFromSelect($alias = null)
+    {
+        if ($alias==null) { $alias = $this->getMainAlias();
+        }
+        if (!$this->hasAlias($alias)) {
+            $alias = $this->join($alias);
+        }
 
-		$group = $this->translateGroups();
-		$order = Array();
-		$select = Array("*");
+        $group = $this->translateGroups();
+        $order = Array();
+        $select = Array("*");
 
-		$selectSql = $this->getSql(array_values($select), $group, $order, $this->limit, $this->offset);
-		$sql = "DELETE $alias.".preg_replace("/^SELECT /", "", $selectSql);
+        $selectSql = $this->getSql(array_values($select), $group, $order, $this->limit, $this->offset);
+        $sql = "DELETE $alias.".preg_replace("/^SELECT /", "", $selectSql);
 
-		$result = $this->obj->getDatabaseConnection()->query($sql);
-		return $result;
-	}
+        $result = $this->obj->getDatabaseConnection()->query($sql);
+        return $result;
+    }
 }
 
-class ActiveRecordSubQuery extends ActiveRecordQuery {
+class ActiveRecordSubQuery extends ActiveRecordQuery
+{
 
     protected $outerQuery;
 
-    public function __construct(ActiveRecordQuery $outerQuery, $model) {
+    public function __construct(ActiveRecordQuery $outerQuery, $model)
+    {
         $this->outerQuery = $outerQuery;
         parent::__construct($model);
     }
 
-    public function createAlias($modelName) {
+    public function createAlias($modelName)
+    {
         return $this->outerQuery->createAlias($modelName);
     }
 
-    public function hasAlias($alias) {
+    public function hasAlias($alias)
+    {
         return $this->outerQuery->hasAlias($alias);
     }
 
-    public function getAlias($alias) {
+    public function getAlias($alias)
+    {
         return $this->outerQuery->getAlias($alias);
     }
 
-    public function getJoinedAliases($fromAlias = null, $joinType = null) {
+    public function getJoinedAliases($fromAlias = null, $joinType = null)
+    {
         $local = parent::getJoinedAliases($fromAlias, $joinType);
         $outer = $this->outerQuery->getJoinedAliases($fromAlias, $joinType);
         $result = array_merge($outer, $local);

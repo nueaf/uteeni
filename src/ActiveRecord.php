@@ -43,8 +43,8 @@ class ActiveRecord
      * keys, which are unknown to the receiving object. Otherwise an axception
      * will be thrown if the keys cannot be understood by the receiving class.
      *
-     * @param array $values The initial values for the object.
-     * @param boolean $ignoreFailure Will make the constructor catch exceptions and carry on its work as if nothing happened.
+     * @param  array   $values        The initial values for the object.
+     * @param  boolean $ignoreFailure Will make the constructor catch exceptions and carry on its work as if nothing happened.
      * @throws ActiveRecordPropertyException if an unknown property is provided and ignoreFailure is false.
      */
     function __construct($values = array(), $ignoreFailure = false)
@@ -61,8 +61,9 @@ class ActiveRecord
             }
         } catch (ActiveRecordPropertyException $e) {
             //On error we may rethrow the exception
-            if (!$ignoreFailure)
+            if (!$ignoreFailure) {
                 throw $e;
+            }
         }
     }
 
@@ -72,7 +73,7 @@ class ActiveRecord
      * The transformation in names is very similar to a underscore to camelcase
      * transformation.
      *
-     * @param string $table
+     * @param  string $table
      * @return string The expected class name
      */
     public static function getClassnameFromTablename($table, $database = null)
@@ -121,10 +122,9 @@ class ActiveRecord
      * a timetamp. Likewise the __set_date method may be used to simply override
      * the normal way of setting the date property.
      *
-     * @param string $name The name of the property to set
+     * @param string $name  The name of the property to set
      * @param string $value The value of the field to be set
      * @todo: Figure out if setting an association should change the underlying relation properties.
-     *
      */
     function __set($name, $value)
     {
@@ -197,8 +197,8 @@ class ActiveRecord
      *                      price in the table. Optionally a single argument may
      *                      be given in the form of a where clause.
      *
-     * @param string $function The funciton name called
-     * @param array $args The arguments passed to the function
+     * @param  string $function The funciton name called
+     * @param  array  $args     The arguments passed to the function
      * @return mixed
      */
     function __call($function, $args)
@@ -263,7 +263,7 @@ class ActiveRecord
     /**
      * Returns true if a column of the given name exists.
      *
-     * @param string $name The name of the column
+     * @param  string $name The name of the column
      * @return bool True if the column exists.
      */
     public function hasColumn($name)
@@ -292,7 +292,7 @@ class ActiveRecord
      * case only associations which have allready been fetched will be part of
      * the returned array.
      *
-     * @param boolean $noAssociations If true only column values will be returned.
+     * @param  boolean $noAssociations If true only column values will be returned.
      * @return Array Array of properties.
      */
     function getValues($noAssociations = false)
@@ -319,7 +319,7 @@ class ActiveRecord
      * associated data. For the recursive call the array value will be used as
      * parameter, thereby allowing the array to hold nested structures.
      *
-     * @param array $assoc See the description above.
+     * @param  array $assoc See the description above.
      * @return Array Array of field=>values
      */
     function getValuesAssoc(array $assoc = array())
@@ -383,8 +383,9 @@ class ActiveRecord
     {
         $primaries = array();
         foreach ($this->meta as $key => $value) {
-            if ($value["primary"] === true)
+            if ($value["primary"] === true) {
                 $primaries[] = $key;
+            }
         }
         return $primaries;
     }
@@ -407,10 +408,12 @@ class ActiveRecord
     {
         $timestamps = array();
         foreach ($this->meta as $key => $value) {
-            if (isset($value["timestamp_update"]) && $value["timestamp_update"] === true)
+            if (isset($value["timestamp_update"]) && $value["timestamp_update"] === true) {
                 $timestamps['update'] = $key;
-            if (isset($value["timestamp_create"]) && $value["timestamp_create"] === true)
+            }
+            if (isset($value["timestamp_create"]) && $value["timestamp_create"] === true) {
                 $timestamps['create'] = $key;
+            }
         }
         return $timestamps;
     }
@@ -418,7 +421,7 @@ class ActiveRecord
     /**
      * Returns true if an association of the given name exists
      *
-     * @param string $name The name of the association.
+     * @param  string $name The name of the association.
      * @return boolean True if the association exists.
      */
     public function hasAssociation($name)
@@ -476,7 +479,7 @@ class ActiveRecord
      * _ class_property:        The name of the relation field in the remote
      *                          class.
      *
-     * @param string $name The name of the association.
+     * @param  string $name The name of the association.
      * @return array The association information or null if no such association
      * exists.
      */
@@ -503,20 +506,23 @@ class ActiveRecord
 
     /**
      * Determines whether or not a row has association data related to it
-     * @param array $ignore_relations
+     *
+     * @param  array $ignore_relations
      * @return boolean True if there are association data related to the row
      */
     public function hasAssociationData($ignore_relations = array())
     {
         $this->getAssociations();
-        if (!$this->associations) return FALSE;
+        if (!$this->associations) { return false;
+        }
         foreach (array_keys($this->associations) as $class) {
-            if (in_array($class, $ignore_relations)) continue; // ed. typically a created_by relation wants to be ignored
+            if (in_array($class, $ignore_relations)) { continue; // ed. typically a created_by relation wants to be ignored
+            }
             if ($this->fetch_assoc($class)) {
-                return TRUE;
+                return true;
             }
         }
-        return FALSE;
+        return false;
     }
 
     /**
@@ -525,7 +531,7 @@ class ActiveRecord
      *
      * If not reverse is found null is returned.
      *
-     * @param $assoc The association to find the reverse for
+     * @param  $assoc The association to find the reverse for
      * @return Array("class"=>$cls, "assoc"=>$assoc) The class holding the association and the name of the association.
      */
     public function reversedJoin($assoc)
@@ -560,8 +566,8 @@ class ActiveRecord
      * Applying the prepare property method several times would in this case
      * result in quotes being commited to the database.
      *
-     * @param string $name
-     * @param mixed $value
+     * @param  string $name
+     * @param  mixed  $value
      * @return string the value in a stringform, useable by mysql
      */
     function prepare_property($name, $value = null)
@@ -587,36 +593,36 @@ class ActiveRecord
 
         //Handle the value dependent on type.
         switch ($this->meta[$name]['type']) {
-            case 'datetime':
-            case 'time':
-            case 'timestamp':
-            case 'date':
-                if (strtolower($value) != "now()" && !preg_match("/^to_date\(/i", $value)) {
-                    $db = Database::connect($this->database);
-                    $value = ($value === "" && $this->meta[$name]['required'] === false) ? "NULL" : $db->quote($value);
-                }
-                break;
-            case 'string':
-            case 'blob':
-            case 'text':
-            case 'enum':
-                if (array_key_exists("sprintf", $this->meta[$name]) && $this->meta[$name]['sprintf']) {
-                    $value = sprintf($this->meta[$name]['sprintf'], $value);
-                }
+        case 'datetime':
+        case 'time':
+        case 'timestamp':
+        case 'date':
+            if (strtolower($value) != "now()" && !preg_match("/^to_date\(/i", $value)) {
                 $db = Database::connect($this->database);
-                $value = $db->quote($value);
-                break;
-            case 'integer':
-                $value = intval($value);
-                break;
-            case 'double':
-            case 'float':
-                $value = floatval($value);
-                break;
-            default:
-                $cls = get_class($this);
-                error_log("ACTIVE_RECORD: Tried to prepare the property $cls.$name, but didnt know the type: {$this->meta[$name]['type']}");
-                break;
+                $value = ($value === "" && $this->meta[$name]['required'] === false) ? "NULL" : $db->quote($value);
+            }
+            break;
+        case 'string':
+        case 'blob':
+        case 'text':
+        case 'enum':
+            if (array_key_exists("sprintf", $this->meta[$name]) && $this->meta[$name]['sprintf']) {
+                $value = sprintf($this->meta[$name]['sprintf'], $value);
+            }
+            $db = Database::connect($this->database);
+            $value = $db->quote($value);
+            break;
+        case 'integer':
+            $value = intval($value);
+            break;
+        case 'double':
+        case 'float':
+            $value = floatval($value);
+            break;
+        default:
+            $cls = get_class($this);
+            error_log("ACTIVE_RECORD: Tried to prepare the property $cls.$name, but didnt know the type: {$this->meta[$name]['type']}");
+            break;
         }
         return $value;
     }
@@ -629,14 +635,15 @@ class ActiveRecord
      * In case the association is empty a has_many association returns null
      * rather than an empty array.
      *
-     * @param string $name The name of the association
-     * @param array $parms Array of extra paramteres to be used in the find_all call wrapped by this method.
+     * @param  string $name  The name of the association
+     * @param  array  $parms Array of extra paramteres to be used in the find_all call wrapped by this method.
      * @return mixed A single ActiveRecord instance, an array or null depending on the association type.
      */
     private function fetch_assoc($name, array $parms = array())
     {
-        if (!$this->hasAssociation($name))
+        if (!$this->hasAssociation($name)) {
             return null;
+        }
 
         $ass = $this->getAssociationInfo($name);
 
@@ -645,29 +652,29 @@ class ActiveRecord
         $value = $this->__get($ass['local_property']);
 
         switch ($ass['ass_type']) {
-            case 'belongs_to':
-            case 'has_one':
-                if ($object->find_by_property($ass['class_property'], $value, $parms)) {
-                    $result = $object;
-                } else {
-                    $result = null;
-                }
-                break;
-            case 'has_many':
-                $result = $object->find_all_by_property($ass['class_property'], $value, $parms);
+        case 'belongs_to':
+        case 'has_one':
+            if ($object->find_by_property($ass['class_property'], $value, $parms)) {
+                $result = $object;
+            } else {
+                $result = null;
+            }
+            break;
+        case 'has_many':
+            $result = $object->find_all_by_property($ass['class_property'], $value, $parms);
 
-                $constname = "ACTIVERECORD_STRICT_FIND_ONE";
-                $strict = defined($constname) && constant($constname);
-                if (!$strict && is_array($result) && count($result) == 0) {
-                    $result = null;
-                }
-                break;
-            case 'has_and_belongs_to_many':
-                $join = "JOIN {$ass['join_table']} ON {$object->table_name}.{$ass['class_property']} = {$ass['join_table']}.{$ass['join_class_property']}";
-                $where = "{$ass['join_table']}.{$ass['join_local_property']} = " . $this->prepare_property($ass['local_property']);
+            $constname = "ACTIVERECORD_STRICT_FIND_ONE";
+            $strict = defined($constname) && constant($constname);
+            if (!$strict && is_array($result) && count($result) == 0) {
+                $result = null;
+            }
+            break;
+        case 'has_and_belongs_to_many':
+            $join = "JOIN {$ass['join_table']} ON {$object->table_name}.{$ass['class_property']} = {$ass['join_table']}.{$ass['join_class_property']}";
+            $where = "{$ass['join_table']}.{$ass['join_local_property']} = " . $this->prepare_property($ass['local_property']);
 
-                $result = $object->find_all($where, null, 0, null, "ASC", $join, null, $parms);
-                break;
+            $result = $object->find_all($where, null, 0, null, "ASC", $join, null, $parms);
+            break;
 
             /* Suggested replacement code in the future. Requires that the associations to the join table is known
             $query = new ActiveRecordQuery(get_class($object));
@@ -707,9 +714,9 @@ class ActiveRecord
      * method wraps. Using this requires knowledge of internal structures in
      * this class, and may be deprecated in the future.
      *
-     * @param string $name The name of the field
-     * @param string $value The value to match with
-     * @param array $parms Array of extra options to the sqlSyntaxor used in find_all
+     * @param  string $name  The name of the field
+     * @param  string $value The value to match with
+     * @param  array  $parms Array of extra options to the sqlSyntaxor used in find_all
      * @return boolean
      */
     protected function find_by_property($name, $value, $parms = array())
@@ -740,9 +747,9 @@ class ActiveRecord
      * method wraps. Using this requires knowledge of internal structures in
      * this class, and may be deprecated in the future.
      *
-     * @param string $name The name of the field
-     * @param string $value The value to match with
-     * @param array $parms Array of extra options to the sqlSyntaxor used in find_all
+     * @param  string $name  The name of the field
+     * @param  string $value The value to match with
+     * @param  array  $parms Array of extra options to the sqlSyntaxor used in find_all
      * @return array
      */
     protected function find_all_by_property($name, $value, $parms = array())
@@ -789,14 +796,14 @@ class ActiveRecord
      * The select clause can in conjunction with joins be used to select only
      * the fields from the FROM table.
      *
-     * @param mixed $where See description above.
-     * @param int $limit The number of rows to be returned
-     * @param int $limit_start The firs row to be returned
-     * @param string $order_by_field The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
-     * @param string $order The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
-     * @param string $joins String containing all joins and joinconditions for the query.
-     * @param string $select The select clause for the query. This will default to "*" if none is given.
-     * @param array $parms Allows possible options for SQLSyntaxor to be set. This should only be used of internal methods are known.
+     * @param  mixed  $where          See description above.
+     * @param  int    $limit          The number of rows to be returned
+     * @param  int    $limit_start    The firs row to be returned
+     * @param  string $order_by_field The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
+     * @param  string $order          The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
+     * @param  string $joins          String containing all joins and joinconditions for the query.
+     * @param  string $select         The select clause for the query. This will default to "*" if none is given.
+     * @param  array  $parms          Allows possible options for SQLSyntaxor to be set. This should only be used of internal methods are known.
      * @return array of active record models matching the query
      */
     protected function find_all_assoc($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC', $joins = "", $select = "", $parms = array())
@@ -817,13 +824,13 @@ class ActiveRecord
         if ($where) {
             if (is_object($where)) {
                 switch (strtolower(get_class($where))) {
-                    case 'criteria':
-                        $where->setmodel($this);
-                        break;
-                    case 'arcriterion':
-                    case 'criterion':
-                        $where->model = $this;
-                        break;
+                case 'criteria':
+                    $where->setmodel($this);
+                    break;
+                case 'arcriterion':
+                case 'criterion':
+                    $where->model = $this;
+                    break;
                 }
             }
             $optionsArray['WHERE'] = $where;
@@ -905,7 +912,7 @@ class ActiveRecord
      * model instance it is called on. The result will be in the form of an
      * array of stdObject classes and NOT ActiveRecord classes.
      *
-     * @param string $sql String containing the full SQL statement to be executed.
+     * @param  string $sql String containing the full SQL statement to be executed.
      * @return array Array of objects describing the resulting rows.
      */
     function find_by_sql($sql)
@@ -954,11 +961,11 @@ class ActiveRecord
      * method should not be used, as find_all provides the same functionality
      * with more flexibility and this method may be deprecated in the future.
      *
-     * @param mixed $where See description above.
-     * @param int $limit The number of rows to be returned
-     * @param int $limit_start The firs row to be returned
-     * @param string $order_by_field The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
-     * @param string $order The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
+     * @param  mixed  $where          See description above.
+     * @param  int    $limit          The number of rows to be returned
+     * @param  int    $limit_start    The firs row to be returned
+     * @param  string $order_by_field The field which to order by. This can be set to "field1 [direction], field2" to allow sorting by two fields.
+     * @param  string $order          The sorting of the fields (ASC/DESC). If more fields are described by order_by_field, this indicates the sorting for the last field.
      * @return array Array of the matching rows.
      */
     function read($where = null, $limit = null, $limit_start = 0, $order_by_field = '', $order = 'ASC')
@@ -975,7 +982,7 @@ class ActiveRecord
      * This method will be deprecated in future versions, as most usecases for
      * this method is handled by find_by_property or find_all.
      *
-     * @param mixed $where A where clause acceptable by find_all
+     * @param  mixed $where A where clause acceptable by find_all
      * @return ActiveRecord The first row matching the where clause.
      */
     function find_first($where = null)
@@ -1006,7 +1013,7 @@ class ActiveRecord
      * matched in a combined primary key table, this method will fail and return
      * false.
      *
-     * @param mixed $value The value to match for the primary key.
+     * @param  mixed $value The value to match for the primary key.
      * @return boolean Returns true if a value was found and hydrated onto this.
      */
     function find($value)
@@ -1025,23 +1032,26 @@ class ActiveRecord
             }
         } else {
             //New behavior for combined keys
-            if (!is_array($value))
+            if (!is_array($value)) {
                 return false;
+            }
 
             $where = array();
             foreach ($primary as $index => $key) {
                 $key = SqlSyntaxor::addGnyfToKey($key, $this->getDatabaseDriver());
-                if (array_key_exists($key, $value))
+                if (array_key_exists($key, $value)) {
                     $where[] = "$key = " . $this->prepare_property($key, $value[$key]);
-                elseif (array_key_exists($index, $value))
+                } elseif (array_key_exists($index, $value)) {
                     $where[] = "$key = " . $this->prepare_property($key, $value[$index]);
-                else
+                } else {
                     return false;
+                }
             }
 
             $result = $this->find_all_assoc(implode(" AND ", $where), 2);
-            if (count($result) != 1)
+            if (count($result) != 1) {
                 return false;
+            }
 
             $this->hydrate($result[0]);
             $this->execute_hooks("after_find");
@@ -1055,10 +1065,10 @@ class ActiveRecord
      * This method is called by the magic __call method if the function name
      * matches get_[x]_[y]. See __call documentation for further information.
      *
-     * @param string $function The aggregate function to be used.
-     * @param string $field The field to use the aggregate function on.
-     * @param string $where A potentially limiting where clause.
-     * @param string $joins The join part of the query.
+     * @param  string $function The aggregate function to be used.
+     * @param  string $field    The field to use the aggregate function on.
+     * @param  string $where    A potentially limiting where clause.
+     * @param  string $joins    The join part of the query.
      * @return mixed The output of the aggregate function.
      */
     protected function getAggregateValue($function, $field, $where = "", $joins = "")
@@ -1076,8 +1086,9 @@ class ActiveRecord
         $sql = SqlSyntaxor::getSelectSQL($options, $this->getDatabaseDriver());
 
         $result = $this->query($sql, $db);
-        if (!$result)
+        if (!$result) {
             return null;
+        }
 
         return $result->fetchColumn();
     }
@@ -1086,10 +1097,10 @@ class ActiveRecord
      * Returns a list of values for a single column in the table, restricted by
      * some other set of constraints.
      *
-     * @param string $field_to_list The name of the column to extract.
-     * @param string $name The field we are using for a where clause
-     * @param string $value The value we are using for a where clause
-     * @param array $options Additional options. May hold all options besides TABLE and WHERE.
+     * @param  string $field_to_list The name of the column to extract.
+     * @param  string $name          The field we are using for a where clause
+     * @param  string $value         The value we are using for a where clause
+     * @param  array  $options       Additional options. May hold all options besides TABLE and WHERE.
      * @return array
      */
     protected function list_by_property($field_to_list, $name, $value, $options)
@@ -1107,8 +1118,9 @@ class ActiveRecord
 
         $sql = SqlSyntaxor::getSelectSQL($options, $driver);
         $result = $this->query($sql, $db);
-        if (!$result)
+        if (!$result) {
             return array();
+        }
 
         return $result->fetchAll(PDO::FETCH_COLUMN);
     }
@@ -1120,8 +1132,8 @@ class ActiveRecord
      * get_count_1($where). For this reason this method may be deprecated in
      * future versions.
      *
-     * @param string $where String holding the where clause for the parameter
-     * @param string $joins String holding te join part of the query
+     * @param  string $where String holding the where clause for the parameter
+     * @param  string $joins String holding te join part of the query
      * @return type The number of rows the where and join parameter will yield.
      */
     function select_count($where = null, $joins = array())
@@ -1155,10 +1167,11 @@ class ActiveRecord
 
     function is_dirty()
     {
-        if (serialize($this->properties) != serialize($this->unmodified_properties))
+        if (serialize($this->properties) != serialize($this->unmodified_properties)) {
             return true;
-        else
+        } else {
             return false;
+        }
     }
 
     /**
@@ -1169,7 +1182,6 @@ class ActiveRecord
      * ie. not arrays and objects, since (string) $object will always just
      * return object and same with arrays.
      *
-     *
      * @return array
      */
     function dirty_fields()
@@ -1177,7 +1189,8 @@ class ActiveRecord
         $props = $this->properties;
         $uprops = $this->unmodified_properties;
 
-        if (!is_array($uprops)) $uprops = array();
+        if (!is_array($uprops)) { $uprops = array();
+        }
 
         if (is_array($this->associations)) {
             foreach (array_keys($this->associations) as $name) {
@@ -1196,10 +1209,11 @@ class ActiveRecord
 
     function is_new()
     {
-        if ($this->properties[$this->find_primary()])
+        if ($this->properties[$this->find_primary()]) {
             return false;
-        else
+        } else {
             return true;
+        }
     }
 
     /*
@@ -1208,36 +1222,37 @@ class ActiveRecord
     protected function validate_data($name, $value)
     {
         if (is_null($value)) {
-            return NULL;
+            return null;
         }
         if (!array_key_exists($name, $this->meta)) {
             //We dont know about the value, and it is most likely the value of an association
             return $value;
         }
         switch ($this->meta[$name]['type']) {
-            case 'blob':
-            case 'text':
-            case 'date':
-            case 'string':
+        case 'blob':
+        case 'text':
+        case 'date':
+        case 'string':
+            return $value;
+                break;
+        case 'integer':
+            $testValue = ltrim($value, "0");
+            if ($testValue == "" && $value == 0) { $testValue = 0;
+            }
+            $intval = filter_var($testValue, FILTER_VALIDATE_INT);
+            if ($intval !== false) {
                 return $value;
-                break;
-            case 'integer':
-                $testValue = ltrim($value, "0");
-                if ($testValue == "" && $value == 0) $testValue = 0;
-                $intval = filter_var($testValue, FILTER_VALIDATE_INT);
-                if ($intval !== FALSE) {
-                    return $value;
-                }
-                break;
-            case 'double':
-            case 'float':
-                $doubleval = filter_var($value, FILTER_VALIDATE_FLOAT);
-                if ($doubleval !== FALSE) {
-                    return $value;
-                }
-                break;
-            default:
+            }
+            break;
+        case 'double':
+        case 'float':
+            $doubleval = filter_var($value, FILTER_VALIDATE_FLOAT);
+            if ($doubleval !== false) {
                 return $value;
+            }
+            break;
+        default:
+            return $value;
                 break;
         }
         throw new Exception("Invalid value for $name: '$value'");
@@ -1262,7 +1277,8 @@ class ActiveRecord
         }
 
         foreach ($this->properties as $key => $value) {
-            if (!$this->hasColumn($key)) continue;
+            if (!$this->hasColumn($key)) { continue;
+            }
 
             if (($this->meta[$key]['required'] == false || $this->meta[$key]['extra'] == 'auto_increment' || $this->meta[$key]['default'] != '') && (isset($this->properties[$key]) === false || $this->properties[$key] === "NULL")) {
                 continue;
@@ -1337,7 +1353,8 @@ class ActiveRecord
             }
         }
         foreach ($this->dirty_fields() as $key => $value) {
-            if (!array_key_exists($key, $this->meta)) continue;
+            if (!array_key_exists($key, $this->meta)) { continue;
+            }
             if ($this->meta[$key]['required'] == true && ($value === null || $value === "NULL")) {
                 throw new Exception("$key is required for table . {$this->table_name}");
             }
@@ -1367,8 +1384,9 @@ class ActiveRecord
             } else {
                 throw new Exception("Cannot update object - primary key or unmodified_properties unknown.");
             }
-            if ($extra_cond != '')
+            if ($extra_cond != '') {
                 $where .= ' ' . $extra_cond;
+            }
             $optionsArray = array("TABLE" => $this->table_name, "WHERE" => $where, "VALUES" => $values);
             $sql = SqlSyntaxor::getUpdateSQL($optionsArray, $this->getDatabaseDriver());
             $db = Database::connect($this->database);
@@ -1377,7 +1395,8 @@ class ActiveRecord
                 throw new Exception(activerecord . print_r($db->errorInfo(), 1) . $sql . "\n");
             }
             $this->affected_rows = $result->rowCount();
-            if ($this->affected_rows) $this->flush_cache();
+            if ($this->affected_rows) { $this->flush_cache();
+            }
         }
         if ($include_assoc) {
             $this->update_assoc();
@@ -1403,13 +1422,15 @@ class ActiveRecord
     {
         $this->execute_hooks("before_save");
         $primary = $this->find_primaries();
-        if (count($primary)) $primary = $primary[0];
-        else $primary = null;
+        if (count($primary)) { $primary = $primary[0];
+        } else { $primary = null;
+        }
 
         if (($primary && isset($this->properties[$primary])) || $this->unmodified_properties) {
             $returnval = $this->update($include_assoc);
-        } else
+        } else {
             $returnval = $this->create($include_assoc);
+        }
         $this->execute_hooks("after_save");
         return $returnval;
     }
@@ -1452,8 +1473,9 @@ class ActiveRecord
     function update_assoc()
     {
 
-        if (!is_array($this->associations))
+        if (!is_array($this->associations)) {
             return;
+        }
         foreach ($this->associations as $name => $assoc) {
             $assoc_val = isset($this->properties[$name]) ? $this->properties[$name] : null;
             if ($assoc_val !== null) {
@@ -1552,15 +1574,17 @@ class ActiveRecord
 
     function cmpFunc($a, $b)
     {
-        if (serialize($a) === serialize($b))
+        if (serialize($a) === serialize($b)) {
             return 0;
+        }
         return serialize($a) > serialize($b) ? -1 : 1;
     }
 
     protected function query($sql, $db)
     {
-        if (isset($this->debug) && $this->debug)
+        if (isset($this->debug) && $this->debug) {
             error_log($sql);
+        }
         return $db->query($sql);
     }
 
@@ -1609,7 +1633,8 @@ class ActiveRecord
 
     private static function validate_hookpoint($hookpoint)
     {
-        if (!in_array($hookpoint, array(
+        if (!in_array(
+            $hookpoint, array(
             'before_find',
             'after_find',
             'before_update',
@@ -1617,7 +1642,9 @@ class ActiveRecord
             'before_create',
             'after_create',
             'before_save',
-            'after_save'))) {
+            'after_save')
+        )
+        ) {
             throw new ActiveRecordValidationException("Unknown hookpoint: $hookpoint");
         }
         return true;

@@ -3,7 +3,8 @@
 
 namespace Nueaf\Uteeni;
 
-class Pluralizer {
+class Pluralizer
+{
     static $plural = array(
         '/(quiz)$/i'               => "$1zes",
         '/^(ox)$/i'                => "$1en",
@@ -52,22 +53,25 @@ class Pluralizer {
     public static function pluralize( $string )
     {
         // save some time in the case that singular and plural are the same
-        if ( in_array( strtolower( $string ), self::$uncountable ) ) return $string;
+        if (in_array(strtolower($string), self::$uncountable) ) { return $string;
+        }
 
         // check for irregular singular forms
         foreach ( self::$irregular as $pattern => $result )
         {
             $pattern = '/' . $pattern . '$/i';
 
-            if ( preg_match( $pattern, $string ) )
-                return preg_replace( $pattern, $result, $string);
+            if (preg_match($pattern, $string) ) {
+                return preg_replace($pattern, $result, $string);
+            }
         }
 
         // check for matches using regular expressions
         foreach ( self::$plural as $pattern => $result )
         {
-            if ( preg_match( $pattern, $string ) )
-                return preg_replace( $pattern, $result, $string );
+            if (preg_match($pattern, $string) ) {
+                return preg_replace($pattern, $result, $string);
+            }
         }
 
         return $string;

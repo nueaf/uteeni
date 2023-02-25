@@ -2,17 +2,19 @@
 
 namespace Nueaf\Uteeni;
 
-class Database{
+class Database
+{
 
-	static $conn = null;
-	static $host = null;
-	static $db 	 = null;
-	static $user = null;
-	static $pass = null;
-	static $port = null;
+    static $conn = null;
+    static $host = null;
+    static $db      = null;
+    static $user = null;
+    static $pass = null;
+    static $port = null;
     private static array $connections = [];
 
-    public static function connect(string $dbName) {
+    public static function connect(string $dbName)
+    {
         $config = ActiveRecordDatabase::getDatabaseConfig($dbName);
         $host = $config["host"];
         if(!array_key_exists($host, self::$connections)) {

@@ -28,11 +28,11 @@ class ActiveRecordQueryFilterColumnValue extends ActiveRecordQueryFilter
     /**
      * Constructor for the filter
      *
-     * @param ActiveRecordQuery $query The query instance the filter relates to
-     * @param string $alias The alias of the table the matching column is placed in
-     * @param string $column The name of the column in the alias table
-     * @param mixed $value The value the column should match
-     * @param string $operator The operator used for comparison. Allows inverting the match.
+     * @param ActiveRecordQuery $query    The query instance the filter relates to
+     * @param string            $alias    The alias of the table the matching column is placed in
+     * @param string            $column   The name of the column in the alias table
+     * @param mixed             $value    The value the column should match
+     * @param string            $operator The operator used for comparison. Allows inverting the match.
      */
     public function __construct(ActiveRecordQuery $query, $column, $value, $operator = "=")
     {
@@ -57,8 +57,10 @@ class ActiveRecordQueryFilterColumnValue extends ActiveRecordQueryFilter
                 throw $e;
             }
             if (strtoupper($value) == "NULL") {
-                if ($this->operator == "=" || $this->operator == "==") $this->operator = "IS";
-                if ($this->operator == "!=" || $this->operator == "<>") $this->operator = "IS NOT";
+                if ($this->operator == "=" || $this->operator == "==") { $this->operator = "IS";
+                }
+                if ($this->operator == "!=" || $this->operator == "<>") { $this->operator = "IS NOT";
+                }
             }
 
             $this->_cached_string = "{$this->column["expression"]} {$this->operator} $value";

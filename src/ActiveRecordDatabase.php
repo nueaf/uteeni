@@ -8,7 +8,7 @@ class ActiveRecordDatabase
     private static string $iniFilePath = "";
 
     /**
-     * @param string $path
+     * @param  string $path
      * @return void
      */
     public static function setIniPath(string $path)
@@ -27,7 +27,7 @@ class ActiveRecordDatabase
     }
 
     /**
-     * @param $name
+     * @param  $name
      * @return void
      * @throws \Exception
      */
@@ -66,7 +66,7 @@ class ActiveRecordDatabase
     }
 
     /**
-     * @param array $dbConfig
+     * @param  array $dbConfig
      * @return array
      * @throws \Exception
      */
@@ -76,25 +76,25 @@ class ActiveRecordDatabase
         $charset = isset($dbConfig['charset']) && $dbConfig['charset'] ? ".';charset={$dbConfig['charset']}'" : '';
         $dbConfig['driver_options'] = 'array()';
         switch ($dbConfig["type"]) {
-            case 'mysql':
-                $dbConfig['driver_options'] = []; ;
-                if (isset($dbConfig['charset']) && $dbConfig['charset']) {
-                    $charset = $dbConfig['charset'];
-                    $dbConfig['driver_options'] = array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES $charset");
-                }
-                $dbConfig['dsn'] = $dbConfig["type"] . ":host=" . $dbConfig["host"] . ($dbConfig["port"] ? ":" . $dbConfig["port"] : "") . ";dbname=" . $dbConfig["db"];
-                break;
-            case 'oci':
-                $dbConfig['dsn'] = 'self::$type.":dbname=//".self::$host.(self::$port?":".self::$port:"")."/".self::$db' . $charset;
-                break;
-            case 'tnsnames':
-                $dbConfig['dsn'] = '"oci:dbname=".self::$db';
-                break;
-            case 'dblib':
-                $dbConfig['dsn'] = 'self::$type.":host=".self::$host.(self::$port?":".self::$port:"").";dbname=".self::$db' . $charset;
-                break;
-            default:
-                throw new \Exception("Unknown database type {$dbConfig['type']}");
+        case 'mysql':
+            $dbConfig['driver_options'] = []; ;
+            if (isset($dbConfig['charset']) && $dbConfig['charset']) {
+                $charset = $dbConfig['charset'];
+                $dbConfig['driver_options'] = array(\PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES $charset");
+            }
+            $dbConfig['dsn'] = $dbConfig["type"] . ":host=" . $dbConfig["host"] . ($dbConfig["port"] ? ":" . $dbConfig["port"] : "") . ";dbname=" . $dbConfig["db"];
+            break;
+        case 'oci':
+            $dbConfig['dsn'] = 'self::$type.":dbname=//".self::$host.(self::$port?":".self::$port:"")."/".self::$db' . $charset;
+            break;
+        case 'tnsnames':
+            $dbConfig['dsn'] = '"oci:dbname=".self::$db';
+            break;
+        case 'dblib':
+            $dbConfig['dsn'] = 'self::$type.":host=".self::$host.(self::$port?":".self::$port:"").";dbname=".self::$db' . $charset;
+            break;
+        default:
+            throw new \Exception("Unknown database type {$dbConfig['type']}");
                 break;
         }
         return $dbConfig;
@@ -113,7 +113,7 @@ class ActiveRecordDatabase
     }
 
     /**
-     * @param string $name
+     * @param  string $name
      * @return array
      * @throws \Exception
      */

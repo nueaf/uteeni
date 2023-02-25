@@ -15,11 +15,11 @@ class ActiveRecordQueryFilterColumnValueIn extends ActiveRecordQueryFilter
     /**
      * Constructor for the filter
      *
-     * @param ActiveRecordQuery $query The query instance the filter relates to
-     * @param string $alias The alias of the table the matching column is placed in
-     * @param string $column The name of the column in the alias table
-     * @param array $values The values the column should be within
-     * @param string $operator The operator used for comparison. Allows inverting the match.
+     * @param ActiveRecordQuery $query    The query instance the filter relates to
+     * @param string            $alias    The alias of the table the matching column is placed in
+     * @param string            $column   The name of the column in the alias table
+     * @param array             $values   The values the column should be within
+     * @param string            $operator The operator used for comparison. Allows inverting the match.
      */
     public function __construct(ActiveRecordQuery $query, $column, array $values, $operator = "IN")
     {
