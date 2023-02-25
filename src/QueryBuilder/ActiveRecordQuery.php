@@ -997,10 +997,12 @@ class ActiveRecordQuery
      * Only has_one associations are linked by this method, as has_many may be
      * halfed by a limit elsewhere in the query.
      *
-     * @param string $indexBy The name of the field or property to index the result by
+     * @param string|null $indexBy The name of the field or property to index the result by
+     * @param bool $dontHydrate
      * @return array
+     * @throws Exception
      */
-    public function execute($indexBy = null, $dontHydrate = false): array
+    public function execute(?string $indexBy = null, bool $dontHydrate = false): array
     {
         $groups = $this->translateGroups();
         if (count($groups)) {
